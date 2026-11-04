@@ -1,0 +1,646 @@
+{
+  "formatVersion": 1,
+  "id": "body-swap",
+  "title": "换身事故",
+  "description": "你和邻居老何互换了身体。他正用你的身体替你报名相亲班。阿岚和老爸都没换身。",
+  "duration": "约 5–8 分钟",
+  "headline": [
+    "我的身体，",
+    "被邻居借走了。"
+  ],
+  "motivation": "查记录 → 拿报名表 → 说服老何 → 换回来",
+  "cover": [
+    {
+      "body": "neighbor",
+      "label": "你在老何身体里"
+    },
+    {
+      "body": "player",
+      "label": "老何在你身体里"
+    }
+  ],
+  "world": {
+    "playerBody": "neighbor",
+    "endingBody": "player",
+    "playerLabel": "你 · 灰发眼镜的邻居身体",
+    "controlHint": "你是黄圈里的灰发邻居，意识还是你",
+    "cast": {
+      "inventor": {
+        "body": "inventor",
+        "label": "阿岚 · 发明家"
+      },
+      "father": {
+        "body": "father",
+        "label": "老周 · 你爸"
+      },
+      "neighbor": {
+        "body": "player",
+        "label": "老何 · 你的身体"
+      }
+    },
+    "locations": {
+      "lab": "实验台",
+      "mailbox": "31 号信箱"
+    }
+  },
+  "state": {
+    "flags": [
+      "briefed",
+      "agreed"
+    ],
+    "choices": {
+      "approach": [
+        "proof",
+        "favor",
+        "broadcast"
+      ]
+    }
+  },
+  "clues": [
+    {
+      "id": "record",
+      "title": "只有两个人换了身",
+      "source": "车库 · 实验记录",
+      "text": "只有你和老何互换。你在老何的身体里，老何在你的身体里。阿岚和老爸都没变；需要老何配合才能换回来。"
+    },
+    {
+      "id": "receipt",
+      "title": "冒签的报名表",
+      "source": "31 号 · 你家信箱",
+      "text": "老何用你的身体替你报名相亲班。照片是你，签名却写着“老何”。这张表就是让他取消报名、归还身体的证据。"
+    }
+  ],
+  "goals": [
+    {
+      "id": "briefing",
+      "title": "先问阿岚怎么换回来",
+      "detail": "找车库前的红发发明家，她会告诉你怎么做。",
+      "action": "去和红发阿岚说话",
+      "target": "inventor",
+      "completeWhen": {
+        "type": "flag",
+        "key": "briefed"
+      }
+    },
+    {
+      "id": "record",
+      "title": "查看机器的实验记录",
+      "detail": "只有你和老何互换，其他人没变。查记录确认恢复方法。",
+      "action": "去查看实验台",
+      "target": "lab",
+      "completeWhen": {
+        "type": "clue",
+        "id": "record"
+      }
+    },
+    {
+      "id": "receipt",
+      "title": "拿到老何冒签的报名表",
+      "detail": "去左边你家的 31 号信箱，拿证据阻止他替你报名。",
+      "action": "去打开 31 号信箱",
+      "target": "mailbox",
+      "completeWhen": {
+        "type": "clue",
+        "id": "receipt"
+      }
+    },
+    {
+      "id": "agreement",
+      "title": "让老何归还你的身体",
+      "detail": "酒吧前穿青色上衣的人，外表是你，里面是老何。",
+      "action": "去找占着你身体的老何",
+      "target": "neighbor",
+      "completeWhen": {
+        "type": "flag",
+        "key": "agreed"
+      }
+    },
+    {
+      "id": "restore",
+      "title": "和老何一起换回来",
+      "detail": "阿岚已经修好机器，回实验台按按钮就能归位。",
+      "action": "去实验台换回身体",
+      "target": "lab",
+      "completeWhen": {
+        "type": "ended"
+      }
+    }
+  ],
+  "intro": "intro",
+  "interactions": {
+    "inventor": [
+      {
+        "dialogue": "reminder",
+        "when": {
+          "type": "flag",
+          "key": "briefed"
+        }
+      },
+      {
+        "dialogue": "briefing"
+      }
+    ],
+    "father": [
+      {
+        "dialogue": "father"
+      }
+    ],
+    "neighbor": [
+      {
+        "dialogue": "agreed_proof",
+        "when": {
+          "type": "choice",
+          "key": "approach",
+          "value": "proof"
+        }
+      },
+      {
+        "dialogue": "agreed_favor",
+        "when": {
+          "type": "choice",
+          "key": "approach",
+          "value": "favor"
+        }
+      },
+      {
+        "dialogue": "agreed_broadcast",
+        "when": {
+          "type": "choice",
+          "key": "approach",
+          "value": "broadcast"
+        }
+      },
+      {
+        "dialogue": "negotiate"
+      }
+    ],
+    "mailbox": [
+      {
+        "dialogue": "receipt"
+      }
+    ],
+    "lab": [
+      {
+        "dialogue": "finale_proof",
+        "when": {
+          "type": "all",
+          "conditions": [
+            {
+              "type": "flag",
+              "key": "briefed"
+            },
+            {
+              "type": "clue",
+              "id": "record"
+            },
+            {
+              "type": "clue",
+              "id": "receipt"
+            },
+            {
+              "type": "flag",
+              "key": "agreed"
+            },
+            {
+              "type": "choice",
+              "key": "approach",
+              "value": "proof"
+            }
+          ]
+        }
+      },
+      {
+        "dialogue": "finale_favor",
+        "when": {
+          "type": "all",
+          "conditions": [
+            {
+              "type": "flag",
+              "key": "briefed"
+            },
+            {
+              "type": "clue",
+              "id": "record"
+            },
+            {
+              "type": "clue",
+              "id": "receipt"
+            },
+            {
+              "type": "flag",
+              "key": "agreed"
+            },
+            {
+              "type": "choice",
+              "key": "approach",
+              "value": "favor"
+            }
+          ]
+        }
+      },
+      {
+        "dialogue": "finale_broadcast",
+        "when": {
+          "type": "all",
+          "conditions": [
+            {
+              "type": "flag",
+              "key": "briefed"
+            },
+            {
+              "type": "clue",
+              "id": "record"
+            },
+            {
+              "type": "clue",
+              "id": "receipt"
+            },
+            {
+              "type": "flag",
+              "key": "agreed"
+            },
+            {
+              "type": "choice",
+              "key": "approach",
+              "value": "broadcast"
+            }
+          ]
+        }
+      },
+      {
+        "dialogue": "record",
+        "when": {
+          "type": "not",
+          "condition": {
+            "type": "clue",
+            "id": "record"
+          }
+        }
+      },
+      {
+        "dialogue": "waiting"
+      }
+    ]
+  },
+  "dialogues": {
+    "intro": {
+      "speaker": "{{playerName}}",
+      "portrait": "neighbor",
+      "caption": "你的意识 / 邻居老何的身体",
+      "lines": [
+        "只有你和老何换了身体。阿岚修机器，老爸看热闹，其他人都没变。",
+        "黄圈里的灰发邻居就是你控制的人。酒吧前长得像你的人，里面是老何。",
+        "先问红发阿岚，然后拿证据、说服老何、换回来。"
+      ],
+      "choices": [
+        {
+          "id": "start",
+          "label": "明白，先去问阿岚"
+        }
+      ]
+    },
+    "briefing": {
+      "speaker": "阿岚",
+      "portrait": "inventor",
+      "caption": "发明家 · 帮你修机器",
+      "lines": [
+        "我还是阿岚，你爸还是你爸。只有你和老何交换了身体。",
+        "查一下实验台，再去你家的信箱拿报名表。老何已经替你报了相亲班，有了证据再让他配合。"
+      ],
+      "choices": [
+        {
+          "id": "understood",
+          "label": "知道了，先查实验台",
+          "effects": [
+            {
+              "type": "flag",
+              "key": "briefed",
+              "value": true
+            }
+          ]
+        }
+      ]
+    },
+    "reminder": {
+      "speaker": "阿岚",
+      "portrait": "inventor",
+      "caption": "发明家 · 你的帮手",
+      "lines": [
+        "现在照左上角黄色按钮做就行。你拿到证据，让老何愿意回来，我负责把机器修好。"
+      ],
+      "choices": [
+        {
+          "id": "continue",
+          "label": "我继续调查"
+        }
+      ]
+    },
+    "father": {
+      "speaker": "老周",
+      "portrait": "father",
+      "caption": "你爸 · 身体没变，正在看热闹",
+      "lines": [
+        "放心，我没换身。你和老何的事情，我完全看懂了。",
+        "那张相亲报名表在咱家信箱里。拿回来，别让他替你决定人生。"
+      ],
+      "choices": [
+        {
+          "id": "stop_filming",
+          "label": "爸，你至少别拍视频"
+        }
+      ]
+    },
+    "record": {
+      "speaker": "实验记录",
+      "portrait": "inventor",
+      "caption": "调查 · 恢复方法",
+      "lines": [
+        "受影响的只有你和老何，其他人没有变化。",
+        "机器可以直接交换回来，但需要两个人配合。去 31 号信箱拿冒签报名表，再找老何谈。"
+      ],
+      "choices": [
+        {
+          "id": "take_record",
+          "label": "把记录放进线索本",
+          "effects": [
+            {
+              "type": "clue",
+              "id": "record"
+            }
+          ]
+        }
+      ]
+    },
+    "receipt": {
+      "speaker": "31 号信箱",
+      "portrait": "player",
+      "caption": "调查 · 你没报名的人生课程",
+      "lines": [
+        "报名表照片是你，签名却是“老何”。他冒充你，连签名都懒得改。",
+        "附言：本人出席，父母不能代课。你把这张证据收起来。"
+      ],
+      "choices": [
+        {
+          "id": "take_receipt",
+          "label": "拿走冒签的报名表",
+          "effects": [
+            {
+              "type": "clue",
+              "id": "receipt"
+            }
+          ]
+        }
+      ]
+    },
+    "negotiate": {
+      "speaker": "老何",
+      "portrait": "player",
+      "caption": "你的外表 / 邻居的意识",
+      "lines": [
+        "年轻真好！我替你报了相亲班，优惠价，第二位半价。可惜不接受邻居代课。",
+        "你想让我把身体还回来？说说看。"
+      ],
+      "choices": [
+        {
+          "id": "proof",
+          "label": "拿出实验记录和冒签报名表",
+          "effects": [
+            {
+              "type": "flag",
+              "key": "agreed",
+              "value": true
+            },
+            {
+              "type": "choice",
+              "key": "approach",
+              "value": "proof"
+            }
+          ],
+          "next": "agreed_proof",
+          "requires": {
+            "type": "all",
+            "conditions": [
+              {
+                "type": "clue",
+                "id": "record"
+              },
+              {
+                "type": "clue",
+                "id": "receipt"
+              }
+            ]
+          },
+          "hint": "需要实验记录和报名表。让他取消报名，退钱，归还身体。"
+        },
+        {
+          "id": "favor",
+          "label": "答应周日替他搬冰箱",
+          "effects": [
+            {
+              "type": "flag",
+              "key": "agreed",
+              "value": true
+            },
+            {
+              "type": "choice",
+              "key": "approach",
+              "value": "favor"
+            }
+          ],
+          "next": "agreed_favor",
+          "hint": "他会配合，但你会欠一个人情。"
+        },
+        {
+          "id": "broadcast",
+          "label": "在酒吧门口大声公开这件事",
+          "effects": [
+            {
+              "type": "flag",
+              "key": "agreed",
+              "value": true
+            },
+            {
+              "type": "choice",
+              "key": "approach",
+              "value": "broadcast"
+            }
+          ],
+          "next": "agreed_broadcast",
+          "hint": "他会配合，全镇也会知道。"
+        }
+      ]
+    },
+    "agreed_proof": {
+      "speaker": "老何",
+      "portrait": "player",
+      "caption": "已经同意归还身体",
+      "lines": [
+        "行，别念了！我取消报名，退钱，跟你回去。",
+        "阿岚修好了机器。回实验台按“换回自己的身体”，只有我们俩需要交换。"
+      ],
+      "choices": [
+        {
+          "id": "back",
+          "label": "回实验台收拾残局"
+        }
+      ]
+    },
+    "finale_proof": {
+      "speaker": "把我们俩换回来",
+      "portrait": "inventor",
+      "caption": "阿岚 · 机器已准备好",
+      "lines": [
+        "老何已同意，阿岚已修好机器。按下按钮，你回到自己的身体，老何也回到他的身体。"
+      ],
+      "choices": [
+        {
+          "id": "restore",
+          "label": "换回自己的身体",
+          "effects": [
+            {
+              "type": "ending",
+              "id": "proof"
+            }
+          ]
+        }
+      ],
+      "pair": [
+        {
+          "body": "neighbor",
+          "label": "现在的你",
+          "caption": "住在老何的身体里"
+        },
+        {
+          "body": "player",
+          "label": "现在的老何",
+          "caption": "住在你的身体里"
+        }
+      ]
+    },
+    "agreed_favor": {
+      "speaker": "老何",
+      "portrait": "player",
+      "caption": "已经同意归还身体",
+      "lines": [
+        "成交！周日来搬冰箱。双开门，也没有多大。",
+        "阿岚修好了机器。回实验台按“换回自己的身体”，只有我们俩需要交换。"
+      ],
+      "choices": [
+        {
+          "id": "back",
+          "label": "回实验台收拾残局"
+        }
+      ]
+    },
+    "finale_favor": {
+      "speaker": "把我们俩换回来",
+      "portrait": "inventor",
+      "caption": "阿岚 · 机器已准备好",
+      "lines": [
+        "老何已同意，阿岚已修好机器。按下按钮，你回到自己的身体，老何也回到他的身体。"
+      ],
+      "choices": [
+        {
+          "id": "restore",
+          "label": "换回自己的身体",
+          "effects": [
+            {
+              "type": "ending",
+              "id": "favor"
+            }
+          ]
+        }
+      ],
+      "pair": [
+        {
+          "body": "neighbor",
+          "label": "现在的你",
+          "caption": "住在老何的身体里"
+        },
+        {
+          "body": "player",
+          "label": "现在的老何",
+          "caption": "住在你的身体里"
+        }
+      ]
+    },
+    "agreed_broadcast": {
+      "speaker": "老何",
+      "portrait": "player",
+      "caption": "已经同意归还身体",
+      "lines": [
+        "别喊！我听得见！全镇也听得见！现在就回去！",
+        "阿岚修好了机器。回实验台按“换回自己的身体”，只有我们俩需要交换。"
+      ],
+      "choices": [
+        {
+          "id": "back",
+          "label": "回实验台收拾残局"
+        }
+      ]
+    },
+    "finale_broadcast": {
+      "speaker": "把我们俩换回来",
+      "portrait": "inventor",
+      "caption": "阿岚 · 机器已准备好",
+      "lines": [
+        "老何已同意，阿岚已修好机器。按下按钮，你回到自己的身体，老何也回到他的身体。"
+      ],
+      "choices": [
+        {
+          "id": "restore",
+          "label": "换回自己的身体",
+          "effects": [
+            {
+              "type": "ending",
+              "id": "broadcast"
+            }
+          ]
+        }
+      ],
+      "pair": [
+        {
+          "body": "neighbor",
+          "label": "现在的你",
+          "caption": "住在老何的身体里"
+        },
+        {
+          "body": "player",
+          "label": "现在的老何",
+          "caption": "住在你的身体里"
+        }
+      ]
+    },
+    "waiting": {
+      "speaker": "实验台",
+      "portrait": "inventor",
+      "caption": "还没准备好",
+      "lines": [
+        "照左上角黄色按钮完成当前一步。拿齐两条线索、让老何同意，机器就能交换回来。"
+      ],
+      "choices": [
+        {
+          "id": "continue",
+          "label": "继续当前任务"
+        }
+      ]
+    }
+  },
+  "endings": {
+    "proof": {
+      "title": "身体归还，学费退回。",
+      "tag": "以理服人 · 互换结束",
+      "text": "老何被报名表上的亲笔签名打败，取消报名，跟你换回身体。阿岚拔掉机器电源，老爸遗憾地收起看热闹的手机。"
+    },
+    "favor": {
+      "title": "你回来了，但周日没了。",
+      "tag": "人情交换 · 欠一台冰箱",
+      "text": "你答应替老何搬一台“只有一点点重”的冰箱。他终于把身体还了回来。机器修好了，你的腰很快就要坏了。"
+    },
+    "broadcast": {
+      "title": "全镇都听见了。",
+      "tag": "公开处刑 · 社区声望 +1",
+      "text": "你在酒吧门口大喊“老何拿我的身体报名相亲班！”他立刻配合换回来。你拿回身体，也成了街坊今天的谈资。"
+    }
+  }
+}

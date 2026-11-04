@@ -1,0 +1,734 @@
+{
+  "formatVersion": 1,
+  "id": "my-haunted-house",
+  "title": "这房子怎么还会骂人？",
+  "description": "老爸从后院带回一件“免费装饰品”，家里就开始闹鬼。进屋调查电视、翻购物袋、上楼查照片，把不该拿的东西送回去。",
+  "duration": "约 8–12 分钟",
+  "headline": [
+    "房子闹鬼了，",
+    "老爸说是新功能。"
+  ],
+  "motivation": "进屋听电视 → 厨房找物件 → 楼上查来历 → 后院归还",
+  "cover": [
+    {
+      "body": "player",
+      "label": "你 · 回家收拾烂摊子"
+    },
+    {
+      "body": "father",
+      "label": "老爸 · 坚称一切正常"
+    }
+  ],
+  "world": {
+    "stage": "house",
+    "playerBody": "player",
+    "playerLabel": "你 · 青衣年轻人",
+    "controlHint": "你是黄圈里的青衣年轻人，大家都没有换身体",
+    "cast": {
+      "inventor": {
+        "body": "inventor",
+        "label": "阿岚 · 来看热闹"
+      },
+      "father": {
+        "body": "father",
+        "label": "老周 · 你爸"
+      },
+      "neighbor": {
+        "body": "neighbor",
+        "label": "老何 · 隔墙吃瓜"
+      }
+    },
+    "locations": {
+      "lab": "实验台",
+      "mailbox": "31 号信箱"
+    }
+  },
+  "state": {
+    "flags": [
+      "fridge_cooled"
+    ],
+    "choices": {}
+  },
+  "clues": [
+    {
+      "id": "message",
+      "title": "电视里的退货要求",
+      "source": "客厅 · 雪花频道",
+      "text": "电视里的声音要求：把昨天从后院拿走的东西放回原处。老爸说那是“免费装饰品”，暂时放在厨房购物袋里。"
+    },
+    {
+      "id": "skull",
+      "title": "袋里的骷髅摆件",
+      "source": "厨房 · 老爸的购物袋",
+      "text": "一枚圆脑袋、缺颗牙的旧骷髅摆件，底座沾着新鲜泥土，袋里还夹着“免费，不用告诉别人”的便签。"
+    },
+    {
+      "id": "origin",
+      "title": "后院施工照片",
+      "source": "楼上书房 · 相册与剪报",
+      "text": "照片拍到了同一个缺牙骷髅摆件，原本放在后院苹果树旁的小土坑里。背面写着：“旧屋纪念物，请勿搬走。”现在知道该送回哪里了。"
+    }
+  ],
+  "goals": [
+    {
+      "id": "listen",
+      "title": "进屋，听听电视想说什么",
+      "detail": "客厅的老电视正在自己换台。调到雪花频道，听清它的留言。",
+      "action": "去调电视，听听留言",
+      "target": "tv",
+      "completeWhen": {
+        "type": "clue",
+        "id": "message"
+      }
+    },
+    {
+      "id": "fridge",
+      "title": "让厨房冰箱消消气",
+      "detail": "电视说那件东西在厨房购物袋里，但冰箱正挡着台面发脾气。",
+      "action": "去问冰箱为什么罢工",
+      "target": "fridge",
+      "completeWhen": {
+        "type": "flag",
+        "key": "fridge_cooled"
+      }
+    },
+    {
+      "id": "bag",
+      "title": "翻翻老爸带回来的购物袋",
+      "detail": "冰箱不闹了。检查台面上的棕色购物袋，找到怪事的源头。",
+      "action": "检查台面上的购物袋",
+      "target": "shopping-bag",
+      "completeWhen": {
+        "type": "clue",
+        "id": "skull"
+      }
+    },
+    {
+      "id": "photos",
+      "title": "上楼，查清摆件原来在哪",
+      "detail": "书房相册里有昨天的施工照片。把摆件和照片对上，别凭感觉乱放。",
+      "action": "查看施工照片与旧剪报",
+      "target": "desk",
+      "completeWhen": {
+        "type": "clue",
+        "id": "origin"
+      }
+    },
+    {
+      "id": "return",
+      "title": "把摆件放回后院原处",
+      "detail": "证据指向苹果树旁的旧土坑。从客厅经过厨房，就能进后院。",
+      "action": "到土坑归还骷髅摆件",
+      "target": "pit",
+      "completeWhen": {
+        "type": "ended"
+      }
+    }
+  ],
+  "intro": "intro",
+  "interactions": {
+    "tv": [
+      {
+        "dialogue": "tv_repeat",
+        "when": {
+          "type": "clue",
+          "id": "message"
+        }
+      },
+      {
+        "dialogue": "tv"
+      }
+    ],
+    "father": [
+      {
+        "dialogue": "father"
+      }
+    ],
+    "sofa": [
+      {
+        "dialogue": "sofa"
+      }
+    ],
+    "vacuum": [
+      {
+        "dialogue": "vacuum"
+      }
+    ],
+    "fridge": [
+      {
+        "dialogue": "fridge_ok",
+        "when": {
+          "type": "flag",
+          "key": "fridge_cooled"
+        }
+      },
+      {
+        "dialogue": "fridge",
+        "when": {
+          "type": "clue",
+          "id": "message"
+        }
+      },
+      {
+        "dialogue": "fridge_early"
+      }
+    ],
+    "shopping-bag": [
+      {
+        "dialogue": "bag_empty",
+        "when": {
+          "type": "clue",
+          "id": "skull"
+        }
+      },
+      {
+        "dialogue": "bag",
+        "when": {
+          "type": "all",
+          "conditions": [
+            {
+              "type": "clue",
+              "id": "message"
+            },
+            {
+              "type": "flag",
+              "key": "fridge_cooled"
+            }
+          ]
+        }
+      },
+      {
+        "dialogue": "bag_wait"
+      }
+    ],
+    "desk": [
+      {
+        "dialogue": "desk_ok",
+        "when": {
+          "type": "clue",
+          "id": "origin"
+        }
+      },
+      {
+        "dialogue": "desk",
+        "when": {
+          "type": "clue",
+          "id": "skull"
+        }
+      },
+      {
+        "dialogue": "desk_early"
+      }
+    ],
+    "inventor": [
+      {
+        "dialogue": "inventor"
+      }
+    ],
+    "neighbor": [
+      {
+        "dialogue": "neighbor"
+      }
+    ],
+    "pit": [
+      {
+        "dialogue": "pit",
+        "when": {
+          "type": "all",
+          "conditions": [
+            {
+              "type": "clue",
+              "id": "message"
+            },
+            {
+              "type": "clue",
+              "id": "skull"
+            },
+            {
+              "type": "clue",
+              "id": "origin"
+            },
+            {
+              "type": "flag",
+              "key": "fridge_cooled"
+            }
+          ]
+        }
+      },
+      {
+        "dialogue": "pit_wait"
+      }
+    ]
+  },
+  "dialogues": {
+    "intro": {
+      "speaker": "{{playerName}}",
+      "portrait": "player",
+      "caption": "你刚回家 · 这次没有任何人换身体",
+      "lines": [
+        "你刚走到家门口，就听见电视喊：“退货！我要退货！”",
+        "老爸说电视升级了语音助手，接着被一张自己滑动的沙发挤出了客厅。",
+        "先点黄色按钮进家门，再调查会说话的电视。点门可以换房间，黄圈始终是你。"
+      ],
+      "choices": [
+        {
+          "id": "start",
+          "label": "进家门，看看出了什么事"
+        }
+      ]
+    },
+    "tv": {
+      "speaker": "老电视",
+      "portrait": "player",
+      "caption": "客厅 · 三个频道都不太对劲",
+      "lines": [
+        "电视自己在天气、购物和雪花频道间切换。",
+        "雪花里似乎有人说“放……回……去”。调到哪个频道听清楚？"
+      ],
+      "choices": [
+        {
+          "id": "static",
+          "label": "调到雪花频道",
+          "next": "message"
+        },
+        {
+          "id": "ads",
+          "label": "先看看购物频道",
+          "next": "ads"
+        },
+        {
+          "id": "weather",
+          "label": "天气预报总该正常吧",
+          "next": "weather"
+        }
+      ],
+      "propPortrait": "tv"
+    },
+    "ads": {
+      "speaker": "购物频道",
+      "portrait": "father",
+      "caption": "特别促销 · 闹鬼也不耽误带货",
+      "lines": [
+        "“今晚下单驱鬼拖把，附赠一只更小的鬼！”",
+        "你决定先听清那句“放回去”，而不是再给家里添东西。"
+      ],
+      "choices": [
+        {
+          "id": "retry",
+          "label": "换到雪花频道听留言",
+          "next": "message"
+        }
+      ],
+      "propPortrait": "tv"
+    },
+    "weather": {
+      "speaker": "天气预报",
+      "portrait": "neighbor",
+      "caption": "局部地区 · 沙发出没",
+      "lines": [
+        "“今晚客厅有阵风，局部可能下老爸。”",
+        "画面下面的小字写着：请转雪花频道办理旧物归还业务。"
+      ],
+      "choices": [
+        {
+          "id": "retry",
+          "label": "换到雪花频道听留言",
+          "next": "message"
+        }
+      ],
+      "propPortrait": "tv"
+    },
+    "message": {
+      "speaker": "电视里的声音",
+      "portrait": "inventor",
+      "caption": "不是来吓人的 · 是来催归还的",
+      "lines": [
+        "“把昨天从后院拿走的东西，放回原处！我不接受‘忘了’这种解释。”",
+        "老爸在旁边小声说：“就一个免费装饰品……放厨房购物袋里了。先别动我那袋打折薯片。”"
+      ],
+      "choices": [
+        {
+          "id": "record",
+          "label": "记下要求，去厨房找购物袋",
+          "effects": [
+            {
+              "type": "clue",
+              "id": "message"
+            }
+          ]
+        }
+      ],
+      "propPortrait": "tv"
+    },
+    "tv_repeat": {
+      "speaker": "老电视",
+      "portrait": "inventor",
+      "caption": "客厅 · 售后热线还没挂",
+      "lines": [
+        "“东西在厨房购物袋，来历可以查楼上施工照片。最后送回后院原处。”",
+        "“不要把我当背景音乐，我是你的任务提示。”"
+      ],
+      "choices": [
+        {
+          "id": "go",
+          "label": "继续调查"
+        }
+      ],
+      "propPortrait": "tv"
+    },
+    "father": {
+      "speaker": "老周",
+      "portrait": "father",
+      "caption": "客厅 · 坚称都是新功能",
+      "lines": [
+        "“电视会说话，沙发会运动，多智能的一套房子！”",
+        "“我昨天就从后院拿回来一个摆件。放厨房了。施工相册在楼上书房。你先查，我去和沙发保持安全距离。”"
+      ],
+      "choices": [
+        {
+          "id": "ask",
+          "label": "我去查，你别再捡东西了"
+        }
+      ]
+    },
+    "sofa": {
+      "speaker": "沙发",
+      "portrait": "father",
+      "caption": "客厅 · 家具也有怨气",
+      "lines": [
+        "你刚想坐下，沙发就往旁边挪了一点。",
+        "老爸：“它今天已经替我完成一万步了。”",
+        "沙发底下只有薯片，没有关键线索。还是去听电视，查厨房购物袋。"
+      ],
+      "choices": [
+        {
+          "id": "leave",
+          "label": "离沙发远一点，继续调查"
+        }
+      ],
+      "propPortrait": "sofa"
+    },
+    "vacuum": {
+      "speaker": "吸尘器",
+      "portrait": "player",
+      "caption": "可选恶搞 · 不能替代归还旧物",
+      "lines": [
+        "你把吸尘器对准空气，试图抓鬼。",
+        "电视立刻大喊：“里面都是饼干屑！你管这叫收容设施？”",
+        "机器吸进一片薯片后罢工。你还是得找到老爸带回的东西，再查清原来的位置。"
+      ],
+      "choices": [
+        {
+          "id": "leave",
+          "label": "放下吸尘器，按线索调查"
+        }
+      ],
+      "propPortrait": "vacuum"
+    },
+    "fridge_early": {
+      "speaker": "冰箱",
+      "portrait": "father",
+      "caption": "厨房 · 先搞清楚要找什么",
+      "lines": [
+        "“你一进来就盯着我，是不是又想把锅整个塞进来？”",
+        "先去客厅听清电视的留言，弄明白老爸把什么带回家了。"
+      ],
+      "choices": [
+        {
+          "id": "go",
+          "label": "先回客厅调电视"
+        }
+      ],
+      "propPortrait": "fridge"
+    },
+    "fridge": {
+      "speaker": "冰箱",
+      "portrait": "father",
+      "caption": "厨房 · 正在消极制冷",
+      "lines": [
+        "“他把刚烧开的汤直接塞给我，还问我为什么有情绪！”",
+        "冰箱门不停开合，你没法安心检查旁边的购物袋。你打算怎么做？"
+      ],
+      "choices": [
+        {
+          "id": "kind",
+          "label": "把热汤移到台面冷却，再向冰箱道歉",
+          "effects": [
+            {
+              "type": "flag",
+              "key": "fridge_cooled",
+              "value": true
+            }
+          ],
+          "next": "fridge_ok"
+        },
+        {
+          "id": "unplug",
+          "label": "拔插头，强行让它闭嘴",
+          "next": "fridge_no"
+        }
+      ],
+      "propPortrait": "fridge"
+    },
+    "fridge_no": {
+      "speaker": "冰箱",
+      "portrait": "father",
+      "caption": "它很安静，但电视更响了",
+      "lines": [
+        "冰箱停了，客厅电视立刻喊：“别拿食物撒气！我的东西还没还！”",
+        "你把插头接回去。冰箱说：“热汤，拿走。就这么简单。”"
+      ],
+      "choices": [
+        {
+          "id": "retry",
+          "label": "重新商量，把热汤移走",
+          "next": "fridge"
+        }
+      ],
+      "propPortrait": "fridge"
+    },
+    "fridge_ok": {
+      "speaker": "冰箱",
+      "portrait": "father",
+      "caption": "厨房 · 恢复营业",
+      "lines": [
+        "“谢谢，终于有人把我当个冰箱了。”",
+        "门安静下来。旁边棕色购物袋露出一个圆圆的缺牙脑袋，袋底还有新鲜泥土。"
+      ],
+      "choices": [
+        {
+          "id": "go",
+          "label": "去检查旁边的购物袋"
+        }
+      ],
+      "propPortrait": "fridge"
+    },
+    "bag_wait": {
+      "speaker": "购物袋",
+      "portrait": "player",
+      "caption": "厨房 · 冰箱门还在挡路",
+      "lines": [
+        "冰箱门正在来回拍打，台面暂时不好靠近。",
+        "先听客厅电视说明，再问问冰箱为什么生气。"
+      ],
+      "choices": [
+        {
+          "id": "go",
+          "label": "先处理冰箱的抱怨"
+        }
+      ],
+      "propPortrait": "skull"
+    },
+    "bag": {
+      "speaker": "老爸的购物袋",
+      "portrait": "player",
+      "caption": "厨房 · 免费的东西最费事",
+      "lines": [
+        "袋里是一枚缺牙骷髅摆件，底座还粘着湿土，旁边夹着“免费，不用告诉别人”的便签。",
+        "这就是电视要求归还的东西。你把它装好带走。",
+        "不能随便找个坑丢下去：上楼书房查施工照片，确认它原本在哪。"
+      ],
+      "choices": [
+        {
+          "id": "take",
+          "label": "带上摆件，去书房查来历",
+          "effects": [
+            {
+              "type": "clue",
+              "id": "skull"
+            }
+          ]
+        }
+      ],
+      "propPortrait": "skull"
+    },
+    "bag_empty": {
+      "speaker": "空购物袋",
+      "portrait": "player",
+      "caption": "厨房 · 摆件已经带在你身上",
+      "lines": [
+        "袋里只剩薯片。骷髅摆件已经在你的线索本中，接下来查楼上的施工照片。"
+      ],
+      "choices": [
+        {
+          "id": "go",
+          "label": "去书房核对照片"
+        }
+      ],
+      "propPortrait": "skull"
+    },
+    "desk_early": {
+      "speaker": "书房相册",
+      "portrait": "inventor",
+      "caption": "楼上 · 先拿到要核对的东西",
+      "lines": [
+        "这里有很多施工照片，你还不知道该找哪一张。",
+        "先听客厅电视留言，再去厨房购物袋里找到老爸带回来的物件。"
+      ],
+      "choices": [
+        {
+          "id": "go",
+          "label": "先下楼找到摆件"
+        }
+      ],
+      "propPortrait": "photo"
+    },
+    "desk": {
+      "speaker": "施工照片与旧剪报",
+      "portrait": "inventor",
+      "caption": "楼上 · 看照片，不用猜密码",
+      "lines": [
+        "一张照片里，缺牙骷髅摆件放在苹果树旁的小土坑；背面写着“旧屋纪念物，请勿搬走”。",
+        "昨天的新照片上，老爸正把同一个摆件装进购物袋。旁边的树和铲子都对得上。",
+        "所以，应该把它放回哪里？"
+      ],
+      "choices": [
+        {
+          "id": "yard",
+          "label": "后院苹果树旁的原来土坑",
+          "effects": [
+            {
+              "type": "clue",
+              "id": "origin"
+            }
+          ],
+          "next": "desk_ok"
+        },
+        {
+          "id": "garage",
+          "label": "车库实验台上，看起来挺搭",
+          "next": "desk_wrong"
+        },
+        {
+          "id": "bin",
+          "label": "随便丢进垃圾桶，眼不见为净",
+          "next": "desk_wrong"
+        }
+      ],
+      "propPortrait": "photo"
+    },
+    "desk_wrong": {
+      "speaker": "阿岚",
+      "portrait": "inventor",
+      "caption": "书房 · 这是归还，不是换个地方藏",
+      "lines": [
+        "“照片里有苹果树和原来的土坑。实验台和垃圾桶都没出现过。”",
+        "“免费装饰品已经给全家添够麻烦了，按照片放回原处。”"
+      ],
+      "choices": [
+        {
+          "id": "retry",
+          "label": "再看照片，重新选位置",
+          "next": "desk"
+        }
+      ],
+      "propPortrait": "photo"
+    },
+    "desk_ok": {
+      "speaker": "施工记录",
+      "portrait": "inventor",
+      "caption": "来历清楚了 · 现在去归还",
+      "lines": [
+        "你圈出照片上的苹果树和土坑，确认了原来的位置。",
+        "下楼回客厅，穿过厨房去后院。带着摆件，把东西放回同一个地方。"
+      ],
+      "choices": [
+        {
+          "id": "go",
+          "label": "带好摆件，去后院归还"
+        }
+      ],
+      "propPortrait": "photo"
+    },
+    "inventor": {
+      "speaker": "阿岚",
+      "portrait": "inventor",
+      "caption": "楼上 · 本次并非实验事故",
+      "lines": [
+        "“今天我连电源都没开，你们家就闹上了，终于不是我的锅。”",
+        "“查桌上相册就能知道摆件原来的位置。别靠猜，也别拿我的实验台当回收站。”"
+      ],
+      "choices": [
+        {
+          "id": "go",
+          "label": "查看桌上的施工照片"
+        }
+      ]
+    },
+    "neighbor": {
+      "speaker": "老何",
+      "portrait": "neighbor",
+      "caption": "后院 · 邻居的观察力只用来吃瓜",
+      "lines": [
+        "“昨天你爸从这个土坑里捡了个东西，今天沙发就开始追他。我早说过免费家具不能乱捡。”",
+        "“什么，不是家具？那更不能乱捡。”"
+      ],
+      "choices": [
+        {
+          "id": "go",
+          "label": "去核对苹果树旁的土坑"
+        }
+      ]
+    },
+    "pit_wait": {
+      "speaker": "苹果树旁的土坑",
+      "portrait": "player",
+      "caption": "后院 · 归还还缺一点依据",
+      "lines": [
+        "土坑就在这里，但你得带上那件物品，并确认它原本就在这里。",
+        "顺序很清楚：客厅听电视 → 厨房取摆件 → 楼上查照片 → 后院归还。"
+      ],
+      "choices": [
+        {
+          "id": "go",
+          "label": "补齐线索，再回来"
+        }
+      ],
+      "propPortrait": "pit"
+    },
+    "pit": {
+      "speaker": "原来的土坑",
+      "portrait": "player",
+      "caption": "后院 · 该把东西放回去了",
+      "lines": [
+        "土坑轮廓和照片一致，旁边还留着老爸的铲子。摆件底座正好放进原来的位置。",
+        "你准备怎么结束这场“免费装饰品”引发的家庭灾难？"
+      ],
+      "choices": [
+        {
+          "id": "honest",
+          "label": "放回原处，让老爸认真道歉",
+          "effects": [
+            {
+              "type": "ending",
+              "id": "sorry"
+            }
+          ]
+        },
+        {
+          "id": "review",
+          "label": "放回原处，附上一张“请勿再寄”的便签",
+          "effects": [
+            {
+              "type": "ending",
+              "id": "review"
+            }
+          ]
+        }
+      ],
+      "propPortrait": "pit"
+    }
+  },
+  "endings": {
+    "sorry": {
+      "title": "鬼走了，老爸留下检讨。",
+      "tag": "物归原处 · 房子恢复正常",
+      "text": "你把摆件放回苹果树旁的原处。电视雪花散去，沙发落地，冰箱安静制冷。老爸承认“不花钱”不代表“没代价”，并给全家写下保证：以后捡东西，先问是不是别人的。"
+    },
+    "review": {
+      "title": "五星房子，一星房客。",
+      "tag": "物归原处 · 留下荒诞售后单",
+      "text": "摆件归位后，房子恢复正常。你留下一张“已归还，请勿再寄”的便签。电视最后显示：“房子五星，老周一星。”老爸追问有没有申诉入口，电视选择关机。"
+    }
+  }
+}

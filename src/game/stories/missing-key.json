@@ -1,0 +1,499 @@
+{
+  "formatVersion": 1,
+  "id": "missing-key",
+  "title": "谁偷了实验室的钥匙",
+  "description": "阿岚的展示马上开始，钥匙却不见了。找两条线索，问清去向，把钥匙交还给她。",
+  "duration": "约 5–8 分钟",
+  "headline": [
+    "钥匙不见了，",
+    "全街都很可疑。"
+  ],
+  "motivation": "查实验台 → 找线索 → 问老爸 → 把钥匙还给阿岚",
+  "cover": [
+    {
+      "body": "player",
+      "label": "你 · 调查的人"
+    },
+    {
+      "body": "inventor",
+      "label": "阿岚 · 丢钥匙的人"
+    }
+  ],
+  "world": {
+    "playerBody": "player",
+    "playerLabel": "你 · 青色上衣的年轻人",
+    "controlHint": "你是黄圈里的青衣年轻人，所有人身份没变",
+    "cast": {
+      "inventor": {
+        "body": "inventor",
+        "label": "阿岚 · 发明家"
+      },
+      "father": {
+        "body": "father",
+        "label": "老周 · 你爸"
+      },
+      "neighbor": {
+        "body": "neighbor",
+        "label": "老何 · 隔壁邻居"
+      }
+    },
+    "locations": {
+      "lab": "实验台",
+      "mailbox": "31 号信箱"
+    }
+  },
+  "state": {
+    "flags": [
+      "briefed",
+      "location_known",
+      "key_found"
+    ],
+    "choices": {
+      "handling": [
+        "honest",
+        "cover",
+        "promise"
+      ]
+    }
+  },
+  "clues": [
+    {
+      "id": "cat_food",
+      "title": "桌边的猫粮",
+      "source": "实验台 · 钥匙原来的位置",
+      "text": "桌边有几粒猫粮，还有半张“别让猫叼走”的便签。有人在担心钥匙被猫拿走。老周今天负责喂猫。"
+    },
+    {
+      "id": "order",
+      "title": "磁吸收纳盒订单",
+      "source": "31 号信箱 · 你家的收货单",
+      "text": "订单签名：老周。商品：磁吸钥匙收纳盒。备注：“放信箱夹层，免得猫又来扒拉。”这与桌边猫粮指向同一个人。"
+    }
+  ],
+  "goals": [
+    {
+      "id": "briefing",
+      "title": "问阿岚钥匙在哪丢的",
+      "detail": "红发阿岚需要钥匙完成演示，先听她说经过。",
+      "action": "去问红发阿岚",
+      "target": "inventor",
+      "completeWhen": {
+        "type": "flag",
+        "key": "briefed"
+      }
+    },
+    {
+      "id": "trace",
+      "title": "查看钥匙原来的位置",
+      "detail": "车库实验台边有线索，别急着指认谁。",
+      "action": "去检查实验台",
+      "target": "lab",
+      "completeWhen": {
+        "type": "clue",
+        "id": "cat_food"
+      }
+    },
+    {
+      "id": "order",
+      "title": "查查你家的信箱",
+      "detail": "左边 31 号信箱里，有一张能解释猫粮的收货单。",
+      "action": "去查 31 号信箱",
+      "target": "mailbox",
+      "completeWhen": {
+        "type": "clue",
+        "id": "order"
+      }
+    },
+    {
+      "id": "father",
+      "title": "拿两条线索问老周",
+      "detail": "你爸穿黄色上衣，在车库左边。问他是不是收起了钥匙。",
+      "action": "去问黄衣老爸",
+      "target": "father",
+      "completeWhen": {
+        "type": "flag",
+        "key": "location_known"
+      }
+    },
+    {
+      "id": "find",
+      "title": "到信箱夹层取钥匙",
+      "detail": "老爸说钥匙被他放在你家信箱的小夹层里。",
+      "action": "去信箱夹层找钥匙",
+      "target": "mailbox",
+      "completeWhen": {
+        "type": "flag",
+        "key": "key_found"
+      }
+    },
+    {
+      "id": "return",
+      "title": "把钥匙交还给阿岚",
+      "detail": "钥匙找到了。把它还给红发阿岚，决定怎么解释这件事。",
+      "action": "去把钥匙还给阿岚",
+      "target": "inventor",
+      "completeWhen": {
+        "type": "ended"
+      }
+    }
+  ],
+  "intro": "intro",
+  "interactions": {
+    "inventor": [
+      {
+        "dialogue": "return",
+        "when": {
+          "type": "flag",
+          "key": "key_found"
+        }
+      },
+      {
+        "dialogue": "reminder",
+        "when": {
+          "type": "flag",
+          "key": "briefed"
+        }
+      },
+      {
+        "dialogue": "briefing"
+      }
+    ],
+    "lab": [
+      {
+        "dialogue": "trace"
+      }
+    ],
+    "mailbox": [
+      {
+        "dialogue": "found",
+        "when": {
+          "type": "flag",
+          "key": "location_known"
+        }
+      },
+      {
+        "dialogue": "order"
+      }
+    ],
+    "father": [
+      {
+        "dialogue": "father_repeat",
+        "when": {
+          "type": "flag",
+          "key": "location_known"
+        }
+      },
+      {
+        "dialogue": "father"
+      }
+    ],
+    "neighbor": [
+      {
+        "dialogue": "neighbor"
+      }
+    ]
+  },
+  "dialogues": {
+    "intro": {
+      "speaker": "{{playerName}}",
+      "portrait": "player",
+      "caption": "你就是你 · 本集没有人换身",
+      "lines": [
+        "阿岚的展示就快开始，实验室钥匙却不见了。",
+        "你控制黄圈里的青衣年轻人。大家的身份都没变，目标只是找回一把钥匙。",
+        "先去问红发阿岚，再按左上角黄色按钮找线索。"
+      ],
+      "choices": [
+        {
+          "id": "start",
+          "label": "先问阿岚发生了什么"
+        }
+      ]
+    },
+    "briefing": {
+      "speaker": "阿岚",
+      "portrait": "inventor",
+      "caption": "发明家 · 丢钥匙的人",
+      "lines": [
+        "钥匙本来在实验台边。我转身试个灯，再回头就没了。",
+        "你爸来喂过猫，老何也来借过手机充电器。先看看桌边，再查查你家的信箱，别一上来就把人当坏蛋。"
+      ],
+      "choices": [
+        {
+          "id": "start_search",
+          "label": "我先查实验台",
+          "effects": [
+            {
+              "type": "flag",
+              "key": "briefed",
+              "value": true
+            }
+          ]
+        }
+      ]
+    },
+    "reminder": {
+      "speaker": "阿岚",
+      "portrait": "inventor",
+      "caption": "还在等钥匙",
+      "lines": [
+        "先查实验台和 31 号信箱。两条线索齐了，再问问你爸。",
+        "老何看起来很可疑，但他每天都长那样，不能算证据。"
+      ],
+      "choices": [
+        {
+          "id": "continue",
+          "label": "继续调查"
+        }
+      ]
+    },
+    "trace": {
+      "speaker": "实验台",
+      "portrait": "inventor",
+      "caption": "调查 · 猫粮不是钥匙",
+      "lines": [
+        "你在原来放钥匙的位置发现几粒猫粮，旁边是半张“别让猫叼走”的便签。",
+        "你爸今天负责喂猫。先记下来，再找别的线索印证。"
+      ],
+      "choices": [
+        {
+          "id": "take",
+          "label": "记下猫粮和便签",
+          "effects": [
+            {
+              "type": "clue",
+              "id": "cat_food"
+            }
+          ]
+        }
+      ]
+    },
+    "order": {
+      "speaker": "31 号信箱",
+      "portrait": "father",
+      "caption": "调查 · 家里的收货单",
+      "lines": [
+        "一张磁吸钥匙收纳盒订单夹在信箱里，收货人是老周。",
+        "备注：“放信箱夹层，免得猫又来扒拉。”你想起实验台旁的猫粮。"
+      ],
+      "choices": [
+        {
+          "id": "take",
+          "label": "记下老爸的收纳盒订单",
+          "effects": [
+            {
+              "type": "clue",
+              "id": "order"
+            }
+          ]
+        }
+      ]
+    },
+    "father": {
+      "speaker": "老周",
+      "portrait": "father",
+      "caption": "你爸 · 今天负责喂猫",
+      "lines": [
+        "钥匙？怎么，找不到东西就来问你爸？",
+        "你拿到了哪些线索？"
+      ],
+      "choices": [
+        {
+          "id": "evidence",
+          "label": "拿出猫粮便签和收纳盒订单，问他收在哪里",
+          "effects": [
+            {
+              "type": "flag",
+              "key": "location_known",
+              "value": true
+            }
+          ],
+          "next": "confession",
+          "requires": {
+            "type": "all",
+            "conditions": [
+              {
+                "type": "clue",
+                "id": "cat_food"
+              },
+              {
+                "type": "clue",
+                "id": "order"
+              },
+              {
+                "type": "flag",
+                "key": "briefed"
+              }
+            ]
+          },
+          "hint": "先听阿岚说明，再带着实验台的猫粮便签和信箱里的收纳盒订单来问。"
+        },
+        {
+          "id": "accuse",
+          "label": "直接问：爸，你是不是偷了钥匙？",
+          "next": "bad_tone",
+          "hint": "没有先说明证据，可能会把话问僵。"
+        },
+        {
+          "id": "leave",
+          "label": "先去找更多线索"
+        }
+      ]
+    },
+    "bad_tone": {
+      "speaker": "老周",
+      "portrait": "father",
+      "caption": "你爸 · 不接受这个说法",
+      "lines": [
+        "什么叫偷？我是在保护科研成果不被猫叼走。",
+        "你把线索摆出来，好好问“收在哪了”，别一上来扣帽子。"
+      ],
+      "choices": [
+        {
+          "id": "retry",
+          "label": "换个问法，再摆出证据",
+          "next": "father"
+        }
+      ]
+    },
+    "confession": {
+      "speaker": "老周",
+      "portrait": "father",
+      "caption": "误会解开了一半",
+      "lines": [
+        "好吧，是我收起来了。猫老在实验台边扒拉，我怕它把钥匙当玩具。",
+        "我把钥匙放进咱家 31 号信箱的小夹层，想着谁都找得到。至于为什么没说……我忘了。"
+      ],
+      "choices": [
+        {
+          "id": "find",
+          "label": "我去信箱夹层取回来"
+        }
+      ]
+    },
+    "father_repeat": {
+      "speaker": "老周",
+      "portrait": "father",
+      "caption": "你爸 · 已说明去向",
+      "lines": [
+        "就在咱家 31 号信箱的小夹层。我这回真的没换地方。"
+      ],
+      "choices": [
+        {
+          "id": "go",
+          "label": "去取钥匙"
+        }
+      ]
+    },
+    "found": {
+      "speaker": "信箱夹层",
+      "portrait": "player",
+      "caption": "调查 · 钥匙找到了",
+      "lines": [
+        "你拉开信箱小夹层，银色钥匙正吸在磁铁上。",
+        "没有神秘盗贼，只有一位没来得及告诉大家的热心老爸。把钥匙还给阿岚吧。"
+      ],
+      "choices": [
+        {
+          "id": "take",
+          "label": "取出钥匙，交给阿岚",
+          "effects": [
+            {
+              "type": "flag",
+              "key": "key_found",
+              "value": true
+            }
+          ]
+        }
+      ]
+    },
+    "neighbor": {
+      "speaker": "老何",
+      "portrait": "neighbor",
+      "caption": "邻居 · 只是来充电",
+      "lines": [
+        "我没碰钥匙。我来的时候，看见你爸捡起一件银色的小东西，嘴里还说猫会叼走。",
+        "你问我为什么不早说？你也没早问啊。"
+      ],
+      "choices": [
+        {
+          "id": "thanks",
+          "label": "谢谢，我去核对线索"
+        }
+      ]
+    },
+    "return": {
+      "speaker": "阿岚",
+      "portrait": "inventor",
+      "caption": "发明家 · 等你交还钥匙",
+      "lines": [
+        "太好了，终于找到了。钥匙到底去哪了？",
+        "你可以决定怎么解释这场误会。"
+      ],
+      "choices": [
+        {
+          "id": "honest",
+          "label": "说清楚：老爸怕猫叼走，收好后忘了说",
+          "effects": [
+            {
+              "type": "choice",
+              "key": "handling",
+              "value": "honest"
+            },
+            {
+              "type": "ending",
+              "id": "honest"
+            }
+          ]
+        },
+        {
+          "id": "cover",
+          "label": "给老爸留面子：说钥匙自己跑进信箱了",
+          "effects": [
+            {
+              "type": "choice",
+              "key": "handling",
+              "value": "cover"
+            },
+            {
+              "type": "ending",
+              "id": "cover"
+            }
+          ]
+        },
+        {
+          "id": "promise",
+          "label": "交还钥匙，请阿岚保证以后实验先通知大家",
+          "effects": [
+            {
+              "type": "choice",
+              "key": "handling",
+              "value": "promise"
+            },
+            {
+              "type": "ending",
+              "id": "promise"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "endings": {
+    "honest": {
+      "title": "破案了，没人偷。",
+      "tag": "把话说清 · 钥匙归还",
+      "text": "你说明老爸怕猫叼走钥匙，收好后却忘了告诉阿岚。演示顺利开始。老爸给收纳盒贴上了“我没有偷”的标签。"
+    },
+    "cover": {
+      "title": "钥匙自己长了腿。",
+      "tag": "给老爸留面子 · 钥匙归还",
+      "text": "你说钥匙自己跑进了信箱。阿岚看了看机器，又看了看钥匙，决定暂缓“让物品自己走路”的研究。老爸悄悄给你点了个赞。"
+    },
+    "promise": {
+      "title": "一把钥匙，一纸保证。",
+      "tag": "趁机谈条件 · 钥匙归还",
+      "text": "你交还钥匙，换来阿岚的保证：以后做实验先通知全街。第二天你发现公告上写着“通知：可能有事发生”。"
+    }
+  }
+}

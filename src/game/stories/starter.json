@@ -1,0 +1,177 @@
+{
+  "formatVersion": 1,
+  "id": "starter-delivery",
+  "title": "午后快递",
+  "description": "你爸的快递到了。去信箱取回，再交给他。可以从这份最小剧本开始修改。",
+  "duration": "约 2 分钟",
+  "headline": [
+    "今天不拯救世界，",
+    "只帮老爸拿快递。"
+  ],
+  "motivation": "去信箱拿快递 → 交给老爸",
+  "cover": [
+    {
+      "body": "player",
+      "label": "你 · 帮忙的人"
+    },
+    {
+      "body": "father",
+      "label": "老爸 · 收件的人"
+    }
+  ],
+  "world": {
+    "playerBody": "player",
+    "playerLabel": "你 · 青色上衣的年轻人",
+    "controlHint": "你是黄圈里的青衣年轻人，所有人身份没变",
+    "cast": {
+      "inventor": {
+        "body": "inventor",
+        "label": "阿岚 · 发明家"
+      },
+      "father": {
+        "body": "father",
+        "label": "老周 · 你爸"
+      },
+      "neighbor": {
+        "body": "neighbor",
+        "label": "老何 · 隔壁邻居"
+      }
+    },
+    "locations": {
+      "lab": "实验台",
+      "mailbox": "31 号信箱"
+    }
+  },
+  "state": {
+    "flags": [],
+    "choices": {}
+  },
+  "clues": [
+    {
+      "id": "parcel",
+      "title": "老爸的快递",
+      "source": "31 号信箱",
+      "text": "收件人老周，寄件人“告别失眠枕头旗舰店”。包裹比想象中轻。"
+    }
+  ],
+  "goals": [
+    {
+      "id": "collect",
+      "title": "取出老爸的快递",
+      "detail": "左边 31 号信箱里有一个小包裹。",
+      "action": "去信箱拿快递",
+      "target": "mailbox",
+      "completeWhen": {
+        "type": "clue",
+        "id": "parcel"
+      }
+    },
+    {
+      "id": "deliver",
+      "title": "把快递交给老爸",
+      "detail": "黄衣老爸就在车库左边。",
+      "action": "去找黄衣老爸",
+      "target": "father",
+      "completeWhen": {
+        "type": "ended"
+      }
+    }
+  ],
+  "intro": "intro",
+  "interactions": {
+    "mailbox": [
+      {
+        "dialogue": "parcel"
+      }
+    ],
+    "father": [
+      {
+        "dialogue": "deliver",
+        "when": {
+          "type": "clue",
+          "id": "parcel"
+        }
+      },
+      {
+        "dialogue": "wait"
+      }
+    ]
+  },
+  "dialogues": {
+    "intro": {
+      "speaker": "{{playerName}}",
+      "portrait": "player",
+      "caption": "你 · 青衣年轻人",
+      "lines": [
+        "今天的目标很简单：去信箱拿快递，交给黄衣老爸。"
+      ],
+      "choices": [
+        {
+          "id": "start",
+          "label": "出发"
+        }
+      ]
+    },
+    "parcel": {
+      "speaker": "31 号信箱",
+      "portrait": "player",
+      "caption": "取件",
+      "lines": [
+        "快递就在信箱里。你把它取出来，收件人确实是老周。"
+      ],
+      "choices": [
+        {
+          "id": "take",
+          "label": "取出快递",
+          "effects": [
+            {
+              "type": "clue",
+              "id": "parcel"
+            }
+          ]
+        }
+      ]
+    },
+    "deliver": {
+      "speaker": "老周",
+      "portrait": "father",
+      "caption": "你爸 · 收件人",
+      "lines": [
+        "快递到了？我期待这枕头半个月了。"
+      ],
+      "choices": [
+        {
+          "id": "give",
+          "label": "把快递交给他",
+          "effects": [
+            {
+              "type": "ending",
+              "id": "delivered"
+            }
+          ]
+        }
+      ]
+    },
+    "wait": {
+      "speaker": "老周",
+      "portrait": "father",
+      "caption": "你爸",
+      "lines": [
+        "快递还在 31 号信箱，先去拿一下吧。"
+      ],
+      "choices": [
+        {
+          "id": "go",
+          "label": "我去拿"
+        }
+      ]
+    }
+  },
+  "endings": {
+    "delivered": {
+      "title": "快递送达，睡意未到。",
+      "tag": "帮了个小忙",
+      "text": "老爸拆开包裹，里面是一张“请保持好心情”的纸。你们决定先给这家店写一段非常精神的评价。"
+    }
+  }
+}
