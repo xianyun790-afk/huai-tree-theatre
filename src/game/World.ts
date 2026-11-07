@@ -4,6 +4,7 @@ import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {route,type Point} from './navigation';
 import {BODIES,TARGETS as TARGET_IDS,type Body,type Room,type Target,type WorldSetup} from './schema';
 import {HOUSE_ROOMS,roomRoute,type Hotspot} from './house/layout';
+import {footstepFor,type SoundCue} from './audio';
 interface Actor {group:THREE.Group;mixer:THREE.AnimationMixer;actions:Record<string,THREE.AnimationAction>;current:string;heading:number}
 export const TARGETS:Partial<Record<Target,Hotspot>>={
  inventor:{label:'阿岚 · 修机器',kind:'对话',point:{x:2.65,z:.9},anchor:[2.85,2.85,.75],body:'inventor'},
@@ -18,13 +19,13 @@ export class World {
  private actors:Partial<Record<Body,Actor>>={};private clock=new THREE.Clock();private raf=0;private observer:ResizeObserver;
  private environment:THREE.Object3D|null=null;private rooms:Partial<Record<Room,THREE.Object3D>>={};private room:Room='street';
  private resolved=false;private skullTaken=false;private fridgeCooled=false;private elapsed=0;private reduceMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
- private paths:Point[]=[];private pending:Target|null=null;private ray=new THREE.Raycaster();private disposed=false;
+ private paths:Point[]=[];private pending:Target|null=null;private ray=new THREE.Raycaster();private disposed=false;private stepDistance=0;
  private labels=new Map<Target,HTMLButtonElement>();private playerLabel:HTMLDivElement;private paused=true;private active=false;
  private cameraFocus=0;private currentTarget:Target='inventor';private ring:THREE.Mesh;private dest:THREE.Mesh;
  private targets:Partial<Record<Target,Hotspot>>=structuredClone(TARGETS);private enabledTargets=new Set<Target>();
  private setup:WorldSetup|null=null;private wasEnded=false;private playerBody:Body='neighbor';
  private keyHandler:(e:KeyboardEvent)=>void;private pointerHandler:(e:PointerEvent)=>void;
- constructor(private host:HTMLDivElement,private interact:(target:Target)=>void,private moveCallback:(moving:boolean)=>void){
+ constructor(private host:HTMLDivElement,private interact:(target:Target)=>void,private moveCallback:(moving:boolean)=>void,private sound:(cue:SoundCue)=>void=()=>{}){
   this.renderer=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'high-performance'});
   this.renderer.setPixelRatio(Math.min(devicePixelRatio,2));this.renderer.outputColorSpace=THREE.SRGBColorSpace;this.renderer.toneMapping=THREE.NoToneMapping;
   this.ink=new OutlineEffect(this.renderer,{defaultThickness:.0025,defaultColor:[.10,.13,.15],defaultAlpha:1});
@@ -87,7 +88,7 @@ export class World {
   if(!this.house&&this.setup){this.targets.lab!.label=this.setup.locations.lab;this.targets.mailbox!.label=this.setup.locations.mailbox;}
  }
  setSceneState(room:Room='street',resolved=false,skullTaken=false,fridgeCooled=false){
-  const next=this.house?room:'street';if(next!==this.room){this.room=next;this.paths=[];this.pending=null;this.dest.visible=false;this.moveCallback(false);this.rebuildTargets();this.showRoom();this.placeActors();this.resize();}
+  const next=this.house?room:'street';if(next!==this.room){this.room=next;this.stepDistance=0;this.paths=[];this.pending=null;this.dest.visible=false;this.moveCallback(false);this.rebuildTargets();this.showRoom();this.placeActors();this.resize();}
   this.resolved=resolved;this.skullTaken=skullTaken;this.fridgeCooled=fridgeCooled;this.updateProps();this.refreshLabels();
  }
  private showRoom(){if(this.environment)this.environment.visible=!this.interior;for(const [id,group] of Object.entries(this.rooms))group.visible=this.interior&&id===this.room;this.scene.background=new THREE.Color(this.interior?'#aabbb0':'#a9dceb');this.resize();}
@@ -111,7 +112,7 @@ export class World {
   const player=this.setup?.playerBody??'neighbor';const spawn=this.house?HOUSE_ROOMS[this.room].spawn:{x:-1,z:1.2};
   for(const [body,a] of Object.entries(this.actors) as [Body,Actor][]){const slot=Object.values(this.targets).find(t=>t?.body===body);a.group.visible=body===player||!!slot;if(body===player)a.group.position.set(spawn.x,.12,spawn.z);else if(slot)a.group.position.set(slot.anchor[0],.12,slot.anchor[2]);a.heading=.55;this.animate(body,'Idle');}
  }
- reset(){this.paths=[];this.pending=null;this.dest.visible=false;this.wasEnded=false;this.playerBody=this.setup?.playerBody??'neighbor';this.room='street';this.resolved=false;this.skullTaken=false;this.fridgeCooled=false;this.moveCallback(false);this.rebuildTargets();this.showRoom();this.placeActors();this.updateProps();this.refreshLabels();}
+ reset(){this.stepDistance=0;this.paths=[];this.pending=null;this.dest.visible=false;this.wasEnded=false;this.playerBody=this.setup?.playerBody??'neighbor';this.room='street';this.resolved=false;this.skullTaken=false;this.fridgeCooled=false;this.moveCallback(false);this.rebuildTargets();this.showRoom();this.placeActors();this.updateProps();this.refreshLabels();}
  visit(id:Target){if(this.paused||!this.active||!this.available(id))return;const t=this.targets[id]!;this.pending=id;this.paths=this.path(this.playerPoint(),t.point);this.dest.position.set(t.point.x,.15,t.point.z);this.dest.visible=true;this.moveCallback(true);}
  private playerPoint():Point{return this.actors[this.playerBody]?.group.position??{x:-1,z:1.2};}
  private path(from:Point,to:Point){return this.interior?roomRoute(from,to):route(from,to);}
@@ -128,7 +129,7 @@ export class World {
  private project(element:HTMLElement,p:THREE.Vector3){const v=p.clone().project(this.camera);element.style.transform=`translate(${(v.x+1)/2*this.host.clientWidth}px,${(-v.y+1)/2*this.host.clientHeight}px) translate(-50%,-100%)`;}
  private tick=()=>{
   if(this.disposed)return;this.raf=requestAnimationFrame(this.tick);const dt=Math.min(this.clock.getDelta(),.05);if(!this.paused)this.elapsed+=dt;const player=this.actors[this.playerBody];
-  if(player&&!this.paused&&this.active&&this.paths.length){const p=this.paths[0],delta=new THREE.Vector3(p.x-player.group.position.x,0,p.z-player.group.position.z),distance=delta.length();if(distance<.07){this.paths.shift();if(!this.paths.length){this.dest.visible=false;this.moveCallback(false);this.animate(this.playerBody,'Idle');if(this.pending){const target=this.pending;this.pending=null;const t=this.targets[target];if(t?.body){const actor=this.actors[t.body];if(actor){player.heading=Math.atan2(actor.group.position.x-player.group.position.x,actor.group.position.z-player.group.position.z);actor.heading=player.heading+Math.PI;}}this.interact(target);}}}else{player.group.position.addScaledVector(delta.normalize(),Math.min(distance,dt*4.2));player.heading=Math.atan2(delta.x,delta.z);this.animate(this.playerBody,'Walk');}}
+  if(player&&!this.paused&&this.active&&this.paths.length){const p=this.paths[0],delta=new THREE.Vector3(p.x-player.group.position.x,0,p.z-player.group.position.z),distance=delta.length();if(distance<.07){this.paths.shift();if(!this.paths.length){this.dest.visible=false;this.moveCallback(false);this.animate(this.playerBody,'Idle');if(this.pending){const target=this.pending;this.pending=null;const t=this.targets[target];if(t?.body){const actor=this.actors[t.body];if(actor){player.heading=Math.atan2(actor.group.position.x-player.group.position.x,actor.group.position.z-player.group.position.z);actor.heading=player.heading+Math.PI;}}this.interact(target);}}}else{const travelled=Math.min(distance,dt*4.2);player.group.position.addScaledVector(delta.normalize(),travelled);this.stepDistance+=travelled;if(this.stepDistance>=1.25){this.stepDistance%=1.25;this.sound(footstepFor(this.house?this.room:'street'));}player.heading=Math.atan2(delta.x,delta.z);this.animate(this.playerBody,'Walk');}}
   const aspect=this.host.clientWidth/this.host.clientHeight;
   if(this.interior){const focus=aspect<.8&&player&&this.active?Math.max(-2,Math.min(2,player.group.position.x))*.65:0;this.cameraFocus+=(focus-this.cameraFocus)*Math.min(1,dt*4);this.camera.position.set(11+this.cameraFocus,14,24);this.camera.lookAt(this.cameraFocus,this.host.clientWidth>1000?2:(aspect<.8?1.8:1),0);}
   else if(aspect<1.15){const focus=player&&this.active?player.group.position.x:0;this.cameraFocus+=(focus-this.cameraFocus)*Math.min(1,dt*4);this.camera.position.set(18+this.cameraFocus,22,28);this.camera.lookAt(this.cameraFocus,this.active?1.3:0,0);}else{this.camera.position.set(18,22,28);this.camera.lookAt(-.5,0,0);}

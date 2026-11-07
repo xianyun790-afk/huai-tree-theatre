@@ -1,0 +1,19 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>游戏音效验证</title>
+<style>body{font:16px system-ui;max-width:950px;margin:40px auto;padding:20px;background:#fff9e9;color:#273038}button{font:inherit;padding:12px 20px}table{border-collapse:collapse;width:100%;margin-top:24px}td,th{text-align:left;border-bottom:1px solid #ccc;padding:8px}pre{white-space:pre-wrap}</style>
+<h1>游戏音效离线渲染验证</h1><p>使用与游戏相同的合成器，通过浏览器 OfflineAudioContext 检查每种音效是否有信号、是否削波、是否正常收尾。</p>
+<button id="run">验证全部音效</button><p id="status">尚未运行</p><table><thead><tr><th>音效</th><th>峰值</th><th>RMS</th><th>收尾峰值</th><th>结果</th></tr></thead><tbody id="results"></tbody></table><pre id="summary"></pre>
+<script type="module">
+import {SOUNDS,synthesize} from '/src/game/audio.ts';
+document.querySelector('#run').onclick=async()=>{
+ const output=[];document.querySelector('#results').replaceChildren();document.querySelector('#status').textContent='正在渲染…';
+ try{for(const cue of Object.keys(SOUNDS)){
+  const context=new OfflineAudioContext(1,48000,48000);synthesize(context,context.destination,cue,0);
+  const buffer=await context.startRendering(),samples=buffer.getChannelData(0);let peak=0,sum=0,tail=0,finite=true;
+  for(let i=0;i<samples.length;i++){const v=samples[i];finite&&=Number.isFinite(v);peak=Math.max(peak,Math.abs(v));sum+=v*v;if(i>46080)tail=Math.max(tail,Math.abs(v));}
+  const rms=Math.sqrt(sum/samples.length),ok=finite&&peak>.005&&peak<.85&&rms>.001&&tail<.0001;
+  output.push({cue,peak,rms,tail,ok});const tr=document.createElement('tr');for(const value of [cue,peak.toFixed(4),rms.toFixed(4),tail.toFixed(6),ok?'PASS':'FAIL']){const td=document.createElement('td');td.textContent=value;tr.append(td);}document.querySelector('#results').append(tr);
+ }
+ document.querySelector('#status').textContent=output.every(o=>o.ok)?`PASS · ${output.length}/${output.length} 种音效通过`:'FAIL';document.querySelector('#summary').textContent=JSON.stringify(output,null,2);
+ }catch(error){document.querySelector('#status').textContent='FAIL · '+error;}
+};
+</script></html>
