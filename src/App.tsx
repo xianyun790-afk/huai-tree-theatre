@@ -9,6 +9,7 @@ import type {Story,Target} from '@/game/schema';
 import {loadCustomStories,loadProgress,loadSelectedId,saveCustomStories,saveProgress,saveSelectedId} from '@/lib/storage';
 import {useGameAudio} from '@/hooks/useGameAudio';
 import {choiceSound,interactionSound,type SoundCue} from '@/game/audio';
+import {playerTask} from '@/game/playerExperience';
 import {Button} from '@/components/ui/Button';
 import {Modal} from '@/components/ui/Modal';
 import {Conversation} from '@/components/story/Conversation';
@@ -27,7 +28,7 @@ export default function App(){
  const [panel,setPanel]=useState<'journal'|'help'|'restart'|'sound'|null>(null);const [toast,setToast]=useState('');
  const [saveFailed,setSaveFailed]=useState(false);const [librarySaveFailed,setLibrarySaveFailed]=useState(false);
  const host=useRef<HTMLDivElement>(null);const world=useRef<World|null>(null);const interactRef=useRef<(id:Target)=>void>(()=>{});
- const {settings:audioSettings,update:updateAudio,play}=useGameAudio();const soundRef=useRef<(cue:SoundCue)=>void>(play);soundRef.current=play;const task=objective(story,progress);const key=definitionKey(story);
+ const {settings:audioSettings,update:updateAudio,play}=useGameAudio();const soundRef=useRef<(cue:SoundCue)=>void>(play);soundRef.current=play;const task=playerTask(story,progress);const key=definitionKey(story);
  const house=story.world.stage==='house';const room=progress.room??'street';const action=house?roomAction(room,task.target,fAction(task.action)): {target:task.target,label:task.action};
  function fAction(text:string){return formatText(text,progress);}
  const ready=load===1&&!error;const result=endingText(story,progress);const dialogue=progress.dialogueId!==null;
@@ -47,13 +48,14 @@ export default function App(){
  },[ready,dialogue,panel,menu,library,progress.started,result,action.target,target,key,room]);
  useEffect(()=>{if(progress.started)setSaveFailed(!saveProgress(story,progress));},[progress,key]);
  useEffect(()=>{saveSelectedId(story.id);},[story.id]);
- useEffect(()=>{if(!toast)return;const timer=setTimeout(()=>setToast(''),4000);return()=>clearTimeout(timer);},[toast]);
+ useEffect(()=>{if(!toast||dialogue||panel||library)return;const timer=setTimeout(()=>setToast(''),5000);return()=>clearTimeout(timer);},[toast,dialogue,panel,library]);
  interactRef.current=(id)=>{const next=interact(story,progress,id);if(next===progress)return;setTarget(id);play(interactionSound(id));setProgress(next);};
  function closeDialogue(){play('click');setProgress(p=>({...p,dialogueId:null}));setTarget(null);}
  function onChoose(id:string){
   const next=choose(story,progress,id);if(next===progress)return;
   const added=next.clues.filter(c=>!progress.clues.includes(c));
   if(added.length)setToast(`线索已记下：${added.map(id=>story.clues.find(c=>c.id===id)!.title).join('、')}`);
+  else if(objective(story,next).id!==objective(story,progress).id)setToast(`已完成：${f(task.title)}`);
   const cue=choiceSound(progress,next);if(cue)play(cue);setProgress(next);if(!next.dialogueId)setTarget(null);
  }
  function newGame(){play('start');world.current?.reset();setProgress(startStory(story,name));setMenu(false);setLibrary(false);setPanel(null);setTarget(null);setToast('');}
@@ -76,7 +78,7 @@ export default function App(){
   {menu&&ready&&!library&&<section className="start-card" aria-label="开始这一集"><span className="eyebrow">{story.title} / {story.duration}</span><h1>{story.headline[0]}<br/><span className="title-underline">{story.headline[1]}</span></h1><p className="start-description">{f(story.description)}</p><div className="cast-strip">{story.cover.map((p,i)=><div key={i} style={{width:`${100/story.cover.length}%`}}><img src={`${import.meta.env.BASE_URL}portraits/${p.body}.png`} alt={f(p.label)}/><span>{f(p.label)}</span></div>)}</div><label className="name-input">你的称呼<input value={name} maxLength={16} onChange={e=>setName(e.target.value)} aria-label="你的称呼"/></label><Button className="primary start-button" onClick={newGame}>开始这一集<ArrowRight size={19}/></Button><button className="continue-link" onClick={()=>setLibrary(true)}>换一个故事 <BookOpen size={15}/></button><p className="start-footnote">{f(story.motivation)}</p></section>}
   {!menu&&ready&&!result&&!library&&<>
    <aside className="objective-card"><div className="objective-top"><span className="eyebrow">下一步 / {story.title}</span><span className="step-number">{task.number} / {task.total}</span></div><div className="control-reminder"><span/>{f(story.world.controlHint)}</div><h2>{f(task.title)}</h2><p>{f(task.detail)}</p><div className="objective-bottom"><span><FileText size={14}/>线索 {progress.clues.length}/{story.clues.length}</span><span>本集独立保存</span></div><button className="next-action" onClick={()=>world.current?.visit(action.target)} disabled={dialogue||!!panel||moving}><Compass size={17}/>{moving?'正在走过去，到达后自动互动':f(action.label)}<ArrowRight size={17}/></button></aside>
-   {house?<RoomNavigation room={room} story={story} locked={dialogue||!!panel||moving} moving={moving} onVisit={id=>world.current?.visit(id)}/>:<div className={`movement-hint ${moving?'is-moving':''}`} role="status">{moving?<><span className="walking-dots">•••</span>正在走过去，点击地面可改道</>:<><MapPin size={15}/>点击地面行走 · 黄色按钮带路</>}</div>}
+   {house?<RoomNavigation room={room} story={story} progress={progress} goalTarget={task.target} locked={dialogue||!!panel||moving} moving={moving} onVisit={id=>world.current?.visit(id)}/>:<div className={`movement-hint ${moving?'is-moving':''}`} role="status">{moving?<><span className="walking-dots">•••</span>正在走过去，点击地面可改道</>:<><MapPin size={15}/>点击地面行走 · 黄色按钮带路</>}</div>}
    <nav className="toolbar" aria-label="游戏工具"><button className="journal-button" onClick={()=>{play('page');setPanel('journal');}} disabled={dialogue}><BookOpen size={21}/><span>线索本</span><b>{progress.clues.length}</b></button><button className="tool-button" onClick={()=>{play('click');setPanel('sound');}} aria-label="音效设置" title={audioSettings.enabled&&audioSettings.volume>0?'音效已开启 · 调节音量':'音效已静音 · 点击开启'}>{audioSettings.enabled&&audioSettings.volume>0?<Volume2 size={21}/>:<VolumeX size={21}/>}</button><button className="tool-button help-button" onClick={()=>setPanel('help')} aria-label="玩法说明"><HelpCircle size={19}/><span>玩法</span></button><button className="tool-button" onClick={()=>setPanel('restart')} aria-label="重新开始这一集"><RotateCcw size={19}/></button></nav>
   </>}
   {(saveFailed||librarySaveFailed)&&<p className="save-warning" role="status">{librarySaveFailed?'此浏览器无法保存剧本，关闭页面后需重新导入。':'此浏览器无法保存进度，请保持页面打开。'}</p>}

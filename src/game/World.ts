@@ -93,6 +93,8 @@ export class World {
  }
  private showRoom(){if(this.environment)this.environment.visible=!this.interior;for(const [id,group] of Object.entries(this.rooms))group.visible=this.interior&&id===this.room;this.scene.background=new THREE.Color(this.interior?'#aabbb0':'#a9dceb');this.resize();}
  private updateProps(){
+  if(this.targets.fridge)this.targets.fridge.label=this.fridgeCooled?'恢复制冷的冰箱':'拒绝营业的冰箱';
+  if(this.targets['shopping-bag'])this.targets['shopping-bag'].label=this.skullTaken?'空购物袋 · 摆件已带走':'老爸的购物袋';
   const kitchen=this.rooms.kitchen;const skull=kitchen?.getObjectByName('Skull_Collectible');if(skull)skull.visible=!this.skullTaken;
   const returned=this.rooms.yard?.getObjectByName('Returned_Skull');if(returned)returned.visible=this.resolved;
   for(const room of Object.values(this.rooms))room.traverse(o=>{if(/Haunt_Ghost|Haunt_FridgeEye|Haunt_Static/.test(o.name))o.visible=!this.resolved;});
