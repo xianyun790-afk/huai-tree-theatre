@@ -22,6 +22,7 @@ export class World {
  private paths:Point[]=[];private pending:Target|null=null;private ray=new THREE.Raycaster();private disposed=false;private stepDistance=0;
  private labels=new Map<Target,HTMLButtonElement>();private playerLabel:HTMLDivElement;private paused=true;private active=false;
  private cameraFocus=0;private currentTarget:Target='inventor';private ring:THREE.Mesh;private dest:THREE.Mesh;
+ private exploration=false;private guided=true;
  private targets:Partial<Record<Target,Hotspot>>=structuredClone(TARGETS);private enabledTargets=new Set<Target>();
  private setup:WorldSetup|null=null;private wasEnded=false;private playerBody:Body='neighbor';
  private keyHandler:(e:KeyboardEvent)=>void;private pointerHandler:(e:PointerEvent)=>void;
@@ -56,7 +57,7 @@ export class World {
   this.renderer.domElement.addEventListener('pointerup',this.pointerHandler);
   this.keyHandler=e=>{
    if(this.paused||!this.active||/INPUT|SELECT|TEXTAREA/.test((e.target as HTMLElement).tagName))return;
-   if(e.key.toLowerCase()==='e'){this.visit(this.currentTarget);return;}
+   if(e.key.toLowerCase()==='e'&&this.guided){this.visit(this.currentTarget);return;}
    const steps:Record<string,[number,number]>={ArrowLeft:[-.8,.5],ArrowRight:[.8,-.5],ArrowUp:[-.5,-.8],ArrowDown:[.5,.8],a:[-.8,.5],d:[.8,-.5],w:[-.5,-.8],s:[.5,.8]};const step=steps[e.key];const p=this.actors[this.playerBody]?.group.position;if(p&&step){e.preventDefault();this.walkTo({x:p.x+step[0],z:p.z+step[1]});}
   };window.addEventListener('keydown',this.keyHandler);this.tick();
  }
@@ -101,8 +102,9 @@ export class World {
  }
  private available(id:Target){return !!this.targets[id]&&(this.enabledTargets.has(id)||!!(this.house&&HOUSE_ROOMS[this.room].doors[id]));}
  private refreshLabels(){
-  for(const [id,b] of this.labels){const t=this.targets[id];b.hidden=!this.active||this.wasEnded||!this.available(id);b.disabled=this.paused;b.classList.toggle('is-current',id===this.currentTarget);b.classList.toggle('door-label',t?.kind==='前往');if(!t)continue;b.querySelector('.label-text')!.textContent=t.label;b.setAttribute('aria-label',`${t.kind}：${t.label}`);b.querySelector('.marker')!.textContent=id===this.currentTarget?'点我':t.kind==='前往'?'↗':t.kind==='对话'?'···':'?';}
+  for(const [id,b] of this.labels){const t=this.targets[id];b.hidden=!this.active||this.wasEnded||!this.available(id);b.disabled=this.paused;b.classList.toggle('is-current',this.guided&&id===this.currentTarget);b.classList.toggle('door-label',t?.kind==='前往');if(!t)continue;b.querySelector('.label-text')!.textContent=t.label;b.setAttribute('aria-label',`${t.kind}：${t.label}`);b.querySelector('.marker')!.textContent=this.guided&&id===this.currentTarget?'点我':t.kind==='前往'?'↗':t.kind==='对话'?'···':'?';}
  }
+ setPresentation(exploration:boolean,guided:boolean){this.exploration=exploration;this.guided=guided;this.refreshLabels();this.resize();}
  setState(active:boolean,paused:boolean,target:Target,ending:boolean){
   this.active=active;this.paused=paused;this.currentTarget=target;
   this.playerLabel.hidden=!active||ending;this.ring.visible=active&&!ending;
@@ -122,8 +124,8 @@ export class World {
  private resize(){
   const w=this.host.clientWidth,h=this.host.clientHeight;if(!w||!h)return;this.renderer.setSize(w,h);const aspect=w/h;
   // Fit a closer room view into the space beside the task and exit cards.
-  const sidebar=this.interior&&w>1000?350:0;
-  const scale=this.interior?(sidebar?Math.max(12.3,15.3/((w-sidebar)/h)):(aspect<.8?18:16)):(aspect<1.15?23:20);
+  const sidebar=this.interior&&w>1000&&!this.exploration?350:0;
+  const scale=this.interior?(sidebar?Math.max(12.3,15.3/((w-sidebar)/h)):(aspect<.8?18:this.exploration?12.3:16)):(aspect<1.15?23:20);
   this.camera.left=-scale*aspect/2;this.camera.right=scale*aspect/2;this.camera.top=scale/2;this.camera.bottom=-scale/2;
   if(sidebar)this.camera.setViewOffset(w,h,-sidebar/2,0,w,h);else this.camera.clearViewOffset();
   this.camera.updateProjectionMatrix();

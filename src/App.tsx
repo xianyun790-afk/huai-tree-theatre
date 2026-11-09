@@ -1,5 +1,8 @@
 import {useEffect,useRef,useState} from 'react';
 import {ArrowRight,BookOpen,Check,Compass,FileText,HelpCircle,LoaderCircle,MapPin,RotateCcw,Volume2,VolumeX,Zap} from 'lucide-react';
+import {HouseEncounter} from '@/components/story/HouseEncounter';
+import {ExploreGoal} from '@/components/story/ExploreGoal';
+import {performHouseAction,type HouseAction} from '@/game/house/handsOn';
 import {RoomNavigation} from '@/components/story/RoomNavigation';
 import {roomAction} from '@/game/house/layout';
 import {World} from '@/game/World';
@@ -26,10 +29,11 @@ export default function App(){
  const [name,setName]=useState(initial.progress.name);const [load,setLoad]=useState(0);const [error,setError]=useState('');
  const [target,setTarget]=useState<Target|null>(null);const [moving,setMoving]=useState(false);
  const [panel,setPanel]=useState<'journal'|'help'|'restart'|'sound'|null>(null);const [toast,setToast]=useState('');
+ const [guided,setGuided]=useState(false);
  const [saveFailed,setSaveFailed]=useState(false);const [librarySaveFailed,setLibrarySaveFailed]=useState(false);
  const host=useRef<HTMLDivElement>(null);const world=useRef<World|null>(null);const interactRef=useRef<(id:Target)=>void>(()=>{});
  const {settings:audioSettings,update:updateAudio,play}=useGameAudio();const soundRef=useRef<(cue:SoundCue)=>void>(play);soundRef.current=play;const task=playerTask(story,progress);const key=definitionKey(story);
- const house=story.world.stage==='house';const room=progress.room??'street';const action=house?roomAction(room,task.target,fAction(task.action)): {target:task.target,label:task.action};
+ const handsOn=story.id==='haunted-house';const house=story.world.stage==='house';const room=progress.room??'street';const action=house?roomAction(room,task.target,fAction(task.action)): {target:task.target,label:task.action};
  function fAction(text:string){return formatText(text,progress);}
  const ready=load===1&&!error;const result=endingText(story,progress);const dialogue=progress.dialogueId!==null;
  const f=(text:string)=>formatText(text,progress);
@@ -42,6 +46,8 @@ export default function App(){
  },[]);
  useEffect(()=>{world.current?.configure({...story.world,playerLabel:f(story.world.playerLabel),cast:Object.fromEntries(Object.entries(story.world.cast).map(([slot,c])=>[slot,{...c,label:f(c.label)}])) as Story['world']['cast'],locations:{lab:f(story.world.locations.lab),mailbox:f(story.world.locations.mailbox)}},Object.keys(story.interactions) as Target[]);},[key,progress.name]);
  useEffect(()=>{world.current?.setSceneState(room,!!result,progress.clues.includes('skull'),!!progress.flags.fridge_cooled);},[key,ready,room,result,progress.clues.length,progress.flags.fridge_cooled]);
+ useEffect(()=>{setGuided(false);},[task.id,key]);
+ useEffect(()=>{world.current?.setPresentation(handsOn,!handsOn||guided);},[handsOn,guided,ready]);
  useEffect(()=>{
   world.current?.setState(ready&&progress.started&&!menu&&!library,dialogue||!!panel||menu||library||!!result,action.target,!!result);
   world.current?.setTalking(dialogue?target:null);
@@ -51,19 +57,21 @@ export default function App(){
  useEffect(()=>{if(!toast||dialogue||panel||library)return;const timer=setTimeout(()=>setToast(''),5000);return()=>clearTimeout(timer);},[toast,dialogue,panel,library]);
  interactRef.current=(id)=>{const next=interact(story,progress,id);if(next===progress)return;setTarget(id);play(interactionSound(id));setProgress(next);};
  function closeDialogue(){play('click');setProgress(p=>({...p,dialogueId:null}));setTarget(null);}
- function onChoose(id:string){
-  const next=choose(story,progress,id);if(next===progress)return;
+ function onChoose(id:string){acceptProgress(choose(story,progress,id));}
+ function onAct(action:HouseAction){acceptProgress(performHouseAction(story,progress,action));}
+ function acceptProgress(next:typeof progress){
+  if(next===progress)return;
   const added=next.clues.filter(c=>!progress.clues.includes(c));
-  if(added.length)setToast(`线索已记下：${added.map(id=>story.clues.find(c=>c.id===id)!.title).join('、')}`);
-  else if(objective(story,next).id!==objective(story,progress).id)setToast(`已完成：${f(task.title)}`);
+  if(added.length)setToast(handsOn?({message:'声音来自后院旧物。去厨房看看。',skull:'拿到了。查查书房的旧照片。',origin:'照片留下了原来的位置。'} as Record<string,string>)[added[0]]??'发现了新线索':`线索已记下：${added.map(id=>story.clues.find(c=>c.id===id)!.title).join('、')}`);
+  else if(objective(story,next).id!==objective(story,progress).id)setToast(handsOn?'冰箱终于安静了。':'已完成：'+f(task.title));
   const cue=choiceSound(progress,next);if(cue)play(cue);setProgress(next);if(!next.dialogueId)setTarget(null);
  }
- function newGame(){play('start');world.current?.reset();setProgress(startStory(story,name));setMenu(false);setLibrary(false);setPanel(null);setTarget(null);setToast('');}
+ function newGame(){play('start');world.current?.reset();setProgress(handsOn?{...startStory(story,name),room:'living',dialogueId:null}:startStory(story,name));setMenu(false);setLibrary(false);setPanel(null);setTarget(null);setGuided(false);setToast(handsOn?'电视：退——货！退——货！':'');}
  function selectStory(next:Story,keepLibrary=false){
   play('page');
   if(progress.started)saveProgress(story,progress);
   const saved=loadProgress(next);if(!saved.started)saved.name=progress.name;
-  setStory(next);setProgress(saved);setName(saved.name);setMenu(!saved.started);setLibrary(keepLibrary);setPanel(null);setTarget(null);setToast('');
+  setGuided(false);setStory(next);setProgress(saved);setName(saved.name);setMenu(!saved.started);setLibrary(keepLibrary);setPanel(null);setTarget(null);setToast('');
  }
  function importStory(next:Story){
   const updated=[...custom.filter(s=>s.id!==next.id),next];setCustom(updated);setLibrarySaveFailed(!saveCustomStories(updated));selectStory(next);
@@ -71,25 +79,25 @@ export default function App(){
  function removeStory(id:string){const updated=custom.filter(s=>s.id!==id);setCustom(updated);setLibrarySaveFailed(!saveCustomStories(updated));if(story.id===id)selectStory(DEFAULT_STORY,true);}
  const stories=[...BUILTIN_STORIES,...custom];
  function summary(s:Story){const p=s.id===story.id&&definitionKey(s)===key?progress:loadProgress(s);return p.endingId?'已完成 · 可以重玩':p.started?`进行中 · ${objective(s,p).number}/${objective(s,p).total} · ${p.clues.length} 条线索`:'尚未开始';}
- return <main className={`game-shell ${house?'house-game':''}`}>
+ return <main className={`game-shell ${house?'house-game':''} ${handsOn?'explore-game':''}`}>
   <div className={`world ${menu?'is-menu':''}`} ref={host}/><div className="vignette"/>
-  <header className="masthead theatre-header"><div className="brand"><span className="brand-icon"><Zap size={25} fill="currentColor"/></span><div><strong>槐树街小剧场</strong><small>{story.title}</small></div></div><button className="library-launch" onClick={()=>{play('page');setLibrary(true);}} disabled={!ready} aria-label="打开剧本库"><BookOpen size={17}/><span>换剧本</span><small>v0.6</small></button></header>
+  <header className="masthead theatre-header"><div className="brand"><span className="brand-icon"><Zap size={25} fill="currentColor"/></span><div><strong>槐树街小剧场</strong><small>{story.title}</small></div></div><button className="library-launch" onClick={()=>{play('page');setLibrary(true);}} disabled={!ready} aria-label="打开剧本库"><BookOpen size={17}/><span>换剧本</span><small>v0.7</small></button></header>
   {error?<div className="load-card"><h2>街区还没准备好</h2><p>{error}</p><Button onClick={()=>location.reload()}>重新加载</Button></div>:load<1?<div className="load-card"><LoaderCircle className="spin" size={32}/><h2>街坊们正在各就各位</h2><p>加载街区、房间、骨骼与动画</p><div className="loading-track"><span style={{width:`${load*100}%`}}/></div><small>{Math.round(load*100)}%</small></div>:null}
-  {menu&&ready&&!library&&<section className="start-card" aria-label="开始这一集"><span className="eyebrow">{story.title} / {story.duration}</span><h1>{story.headline[0]}<br/><span className="title-underline">{story.headline[1]}</span></h1><p className="start-description">{f(story.description)}</p><div className="cast-strip">{story.cover.map((p,i)=><div key={i} style={{width:`${100/story.cover.length}%`}}><img src={`${import.meta.env.BASE_URL}portraits/${p.body}.png`} alt={f(p.label)}/><span>{f(p.label)}</span></div>)}</div><label className="name-input">你的称呼<input value={name} maxLength={16} onChange={e=>setName(e.target.value)} aria-label="你的称呼"/></label><Button className="primary start-button" onClick={newGame}>开始这一集<ArrowRight size={19}/></Button><button className="continue-link" onClick={()=>setLibrary(true)}>换一个故事 <BookOpen size={15}/></button><p className="start-footnote">{f(story.motivation)}</p></section>}
+  {menu&&ready&&!library&&<section className="start-card" aria-label="开始这一集"><span className="eyebrow">{story.title} / {story.duration}</span><h1>{story.headline[0]}<br/><span className="title-underline">{story.headline[1]}</span></h1><p className="start-description">{handsOn?'老爸捡回一件东西，家具就开始发疯。进屋，自己动手查。':f(story.description)}</p><div className="cast-strip">{story.cover.map((p,i)=><div key={i} style={{width:`${100/story.cover.length}%`}}><img src={`${import.meta.env.BASE_URL}portraits/${p.body}.png`} alt={f(p.label)}/><span>{f(p.label)}</span></div>)}</div><label className="name-input">你的称呼<input value={name} maxLength={16} onChange={e=>setName(e.target.value)} aria-label="你的称呼"/></label><Button className="primary start-button" onClick={newGame}>开始这一集<ArrowRight size={19}/></Button><button className="continue-link" onClick={()=>setLibrary(true)}>换一个故事 <BookOpen size={15}/></button><p className="start-footnote">{handsOn?'调电视 · 搬热汤 · 翻照片 · 物归原处':f(story.motivation)}</p></section>}
   {!menu&&ready&&!result&&!library&&<>
-   <aside className="objective-card"><div className="objective-top"><span className="eyebrow">下一步 / {story.title}</span><span className="step-number">{task.number} / {task.total}</span></div><div className="control-reminder"><span/>{f(story.world.controlHint)}</div><h2>{f(task.title)}</h2><p>{f(task.detail)}</p><div className="objective-bottom"><span><FileText size={14}/>线索 {progress.clues.length}/{story.clues.length}</span><span>本集独立保存</span></div><button className="next-action" onClick={()=>world.current?.visit(action.target)} disabled={dialogue||!!panel||moving}><Compass size={17}/>{moving?'正在走过去，到达后自动互动':f(action.label)}<ArrowRight size={17}/></button></aside>
-   {house?<RoomNavigation room={room} story={story} progress={progress} goalTarget={task.target} locked={dialogue||!!panel||moving} moving={moving} onVisit={id=>world.current?.visit(id)}/>:<div className={`movement-hint ${moving?'is-moving':''}`} role="status">{moving?<><span className="walking-dots">•••</span>正在走过去，点击地面可改道</>:<><MapPin size={15}/>点击地面行走 · 黄色按钮带路</>}</div>}
+   {handsOn?<ExploreGoal story={story} progress={progress} action={f(action.label)} locked={dialogue||!!panel||moving} moving={moving} onGuide={setGuided} onVisit={()=>world.current?.visit(action.target)}/>:<aside className="objective-card"><div className="objective-top"><span className="eyebrow">下一步 / {story.title}</span><span className="step-number">{task.number} / {task.total}</span></div><div className="control-reminder"><span/>{f(story.world.controlHint)}</div><h2>{f(task.title)}</h2><p>{f(task.detail)}</p><div className="objective-bottom"><span><FileText size={14}/>线索 {progress.clues.length}/{story.clues.length}</span><span>本集独立保存</span></div><button className="next-action" onClick={()=>world.current?.visit(action.target)} disabled={dialogue||!!panel||moving}><Compass size={17}/>{moving?'正在走过去，到达后自动互动':f(action.label)}<ArrowRight size={17}/></button></aside>}
+   {house?<RoomNavigation quiet={handsOn&&!guided} room={room} story={story} progress={progress} goalTarget={task.target} locked={dialogue||!!panel||moving} moving={moving} onVisit={id=>world.current?.visit(id)}/>:<div className={`movement-hint ${moving?'is-moving':''}`} role="status">{moving?<><span className="walking-dots">•••</span>正在走过去，点击地面可改道</>:<><MapPin size={15}/>点击地面行走 · 黄色按钮带路</>}</div>}
    <nav className="toolbar" aria-label="游戏工具"><button className="journal-button" onClick={()=>{play('page');setPanel('journal');}} disabled={dialogue}><BookOpen size={21}/><span>线索本</span><b>{progress.clues.length}</b></button><button className="tool-button" onClick={()=>{play('click');setPanel('sound');}} aria-label="音效设置" title={audioSettings.enabled&&audioSettings.volume>0?'音效已开启 · 调节音量':'音效已静音 · 点击开启'}>{audioSettings.enabled&&audioSettings.volume>0?<Volume2 size={21}/>:<VolumeX size={21}/>}</button><button className="tool-button help-button" onClick={()=>setPanel('help')} aria-label="玩法说明"><HelpCircle size={19}/><span>玩法</span></button><button className="tool-button" onClick={()=>setPanel('restart')} aria-label="重新开始这一集"><RotateCcw size={19}/></button></nav>
   </>}
   {(saveFailed||librarySaveFailed)&&<p className="save-warning" role="status">{librarySaveFailed?'此浏览器无法保存剧本，关闭页面后需重新导入。':'此浏览器无法保存进度，请保持页面打开。'}</p>}
   {toast&&!dialogue&&!panel&&!library&&<div className="toast" role="status"><Check size={17}/>{toast}</div>}
-  {dialogue&&ready&&!menu&&!library&&<Conversation story={story} progress={progress} onChoose={onChoose} onClose={closeDialogue}/>}
+  {dialogue&&ready&&!menu&&!library&&(handsOn?<HouseEncounter key={progress.dialogueId} story={story} progress={progress} onChoose={onChoose} onAct={onAct} onClose={closeDialogue} play={play}/>:<Conversation story={story} progress={progress} onChoose={onChoose} onClose={closeDialogue}/>)}
   {panel==='journal'&&<CaseBook story={story} progress={progress} onClose={()=>setPanel(null)}/>}
   {panel==='sound'&&<Modal title="让房子热闹一点。" onClose={()=>setPanel(null)} kicker="游戏音效"><div className="audio-settings"><label className="audio-toggle"><span><strong>开启游戏音效</strong><small>脚步、开门、线索和卡通道具</small></span><input type="checkbox" checked={audioSettings.enabled} onChange={e=>updateAudio({...audioSettings,enabled:e.target.checked})}/></label><label className="audio-volume"><span>音效音量 <output>{Math.round(audioSettings.volume*100)}%</output></span><input aria-label="音效音量" type="range" min="0" max="100" value={Math.round(audioSettings.volume*100)} onChange={e=>updateAudio({...audioSettings,volume:Number(e.target.value)/100})}/></label><p>在屋里踩木地板，走到后院踩草地；发现线索会有一小段提示旋律。设置会保存在这台浏览器。</p><div className="modal-actions"><Button disabled={!audioSettings.enabled||audioSettings.volume===0} onClick={()=>play('clue')}>试听线索音效<Volume2 size={16}/></Button><Button className="primary" onClick={()=>setPanel(null)}>继续游戏</Button></div></div></Modal>}
-  {panel==='help'&&<Modal title="看黄色按钮，一步一步玩。" onClose={()=>setPanel(null)} kicker={story.title}><div className="help-list"><p><b>你控制谁</b>{f(story.world.controlHint)}。黄圈始终跟着你。</p><p><b>这一集要做什么</b>{f(story.motivation)}</p><p><b>怎么操作</b>点左上角黄色按钮，人物自动走近并互动。点地面可自由移动，方向键或 WASD 也能走。E 键走向当前目标。</p><p><b>怎么换故事</b>右上角「换剧本」可切换内置故事，或导入自己的 JSON 剧本。各集独立存档，换回来还能接着玩。</p></div><p className="help-foot">试玩包含室外街区、客厅、厨房、书房和后院，复用四个身体模型，使用固定编写的对白。自定义模型和配音尚未接入。</p><Button className="primary full-width" onClick={()=>setPanel(null)}>继续这一集</Button></Modal>}
+  {panel==='help'&&<Modal title={handsOn?"进屋，动手试试。":"看黄色按钮，一步一步玩。"} onClose={()=>setPanel(null)} kicker={story.title}><div className="help-list"><p><b>你控制谁</b>{f(story.world.controlHint)}。黄圈始终跟着你。</p><p><b>这一集要做什么</b>{handsOn?"查出谁把什么东西带回了家。":f(story.motivation)}</p><p><b>怎么操作</b>{handsOn?"点物件靠近互动。电视可以调谐，汤锅可以拖动，也能点选拿起再放下。点地面、方向键或 WASD 移动。需要指路时展开左上角提示。":"点左上角黄色按钮，人物自动走近并互动。点地面可自由移动，方向键或 WASD 也能走。E 键走向当前目标。"}</p><p><b>怎么换故事</b>右上角「换剧本」可切换内置故事，或导入自己的 JSON 剧本。各集独立存档，换回来还能接着玩。</p></div><p className="help-foot">试玩包含室外街区、客厅、厨房、书房和后院，复用四个身体模型，使用固定编写的对白。自定义模型和配音尚未接入。</p><Button className="primary full-width" onClick={()=>setPanel(null)}>继续这一集</Button></Modal>}
   {panel==='restart'&&<Modal title={`重新开始《${story.title}》？`} onClose={()=>setPanel(null)} kicker="只重置当前这一集"><p className="panel-intro">这一集的线索、选择和对话会重置。其他剧本的进度保留。</p><div className="modal-actions"><Button onClick={()=>setPanel(null)}>继续这一局</Button><Button className="primary" onClick={newGame}>重新开始<RotateCcw size={16}/></Button></div></Modal>}
   {!menu&&result&&!library&&<section className="ending-card" aria-label="本集结局"><div className="ending-stamp"><Check size={22}/>本集完</div><span className="eyebrow">{f(result.tag)}</span><h1>{f(result.title)}</h1><p>{f(result.text)}</p><div className="ending-stats"><span><b>{story.goals.filter(g=>matches(g.completeWhen,progress)).length}/{story.goals.length}</b>任务完成</span><span><b>{progress.clues.length}/{story.clues.length}</b>线索记录</span></div><Button className="primary full-width" onClick={()=>setLibrary(true)}>换一个故事继续玩<BookOpen size={17}/></Button><button className="continue-link" onClick={newGame}>重玩这一集，试试另一种选择<RotateCcw size={14}/></button></section>}
   {library&&ready&&<StoryLibrary stories={stories} currentId={story.id} summary={summary} onSelect={selectStory} onImport={importStory} onRemove={removeStory} onClose={()=>setLibrary(false)}/>}
-  <footer className="world-caption"><span>槐树街 / 小剧场</span><span>{f(story.motivation)}</span></footer>
+  <footer className="world-caption"><span>槐树街 / 小剧场</span><span>{handsOn?"点物件互动 · 点地面行走 · 卡住再看提示":f(story.motivation)}</span></footer>
  </main>;
 }
