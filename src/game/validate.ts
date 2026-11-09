@@ -40,7 +40,7 @@ export function validateStory(value: unknown): Validation {
   if (Object.keys(choiceDefs).length > 20) error('state.choices', '最多 20 类选择');
   for (const [key, values] of Object.entries(choiceDefs)) { id(key, `state.choices.${key}`); const a = list(values, `state.choices.${key}`, 1, 12); a.forEach((v, i) => id(v, `state.choices.${key}[${i}]`)); if (new Set(a).size !== a.length) error(`state.choices.${key}`, '值不能重复'); }
   const clueIds = new Set<unknown>();
-  list(value.clues, 'clues', 0, 20).forEach((v, i) => { const c = record(v, `clues[${i}]`); id(c.id, `clues[${i}].id`); if (clueIds.has(c.id)) error(`clues[${i}].id`, '线索标识重复'); clueIds.add(c.id); text(c.title, `clues[${i}].title`, 60); text(c.source, `clues[${i}].source`, 100); text(c.text, `clues[${i}].text`, 1200); });
+  list(value.clues, 'clues', 0, 20).forEach((v, i) => { const c = record(v, `clues[${i}]`); id(c.id, `clues[${i}].id`); if (clueIds.has(c.id)) error(`clues[${i}].id`, '线索标识重复'); clueIds.add(c.id); text(c.title, `clues[${i}].title`, 60); text(c.source, `clues[${i}].source`, 100); text(c.text, `clues[${i}].text`, 1200); if(c.itemLabel!==undefined)text(c.itemLabel,`clues[${i}].itemLabel`,60); });
   const dialogues = record(value.dialogues, 'dialogues'); const endings = record(value.endings, 'endings');
   if (Object.keys(dialogues).length < 1 || Object.keys(dialogues).length > 80) error('dialogues', '需要 1–80 段对话');
   if (Object.keys(endings).length < 1 || Object.keys(endings).length > 12) error('endings', '需要 1–12 个结局');
@@ -63,6 +63,7 @@ export function validateStory(value: unknown): Validation {
   let endingEffects = 0;
   for (const [key, raw] of Object.entries(dialogues)) {
     id(key, `dialogues.${key}`); const d = record(raw, `dialogues.${key}`); const path = `dialogues.${key}`;
+    if(d.judgment!==undefined){const j=record(d.judgment,`${path}.judgment`);if(j.label!==undefined)text(j.label,`${path}.judgment.label`,40);text(j.question,`${path}.judgment.question`,160);text(j.evidence,`${path}.judgment.evidence`,600);}
     if(d.propPortrait!==undefined&&!PROP_PORTRAITS.includes(d.propPortrait as never))error(`${path}.propPortrait`,'请选择现有物品立绘');
     text(d.speaker, `${path}.speaker`, 60); text(d.caption, `${path}.caption`, 120); body(d.portrait, `${path}.portrait`);
     list(d.lines, `${path}.lines`, 1, 8).forEach((v, i) => text(v, `${path}.lines[${i}]`, 1200));

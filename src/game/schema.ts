@@ -28,6 +28,7 @@ export interface StoryChoice {
 export interface Portrait { body: Body; label: string; caption?: string }
 export const PROP_PORTRAITS = ['tv','fridge','skull','photo','pit','vacuum','sofa'] as const;
 export interface Dialogue {
+  judgment?: {label?:string;question:string;evidence:string};
   propPortrait?: typeof PROP_PORTRAITS[number];
   speaker: string;
   caption: string;
@@ -56,7 +57,7 @@ export interface Story {
   cover: Portrait[];
   world: WorldSetup;
   state: { flags: string[]; choices: Record<string, string[]> };
-  clues: { id: string; title: string; source: string; text: string }[];
+  clues: { id: string; title: string; source: string; text: string; itemLabel?:string }[];
   goals: { id: string; title: string; detail: string; action: string; target: Target; completeWhen: Condition }[];
   intro: string;
   interactions: Partial<Record<Target, { when?: Condition; dialogue: string }[]>>;

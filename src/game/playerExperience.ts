@@ -1,8 +1,13 @@
 import type {Dialogue,Progress,Room,Story,Target} from './schema.ts';
-import {objective} from './story.ts';
+import {formatText,objective} from './story.ts';
 import {HOUSE_ROOMS,nextDoor,targetRoom} from './house/layout.ts';
 
 export interface PlayerJudgment {label:string;question:string;evidence:string}
+export function carriedItems(story:Story,p:Progress):string[]{
+ const items=story.clues.filter(c=>c.itemLabel&&p.clues.includes(c.id)).map(c=>formatText(c.itemLabel!,p));
+ if(!items.length&&story.id==='haunted-house'&&p.clues.includes('skull'))items.push('骷髅摆件'+(p.clues.includes('origin')?' · 原位置已确认':''));
+ return items;
+}
 // Presentation improvements are separate from the authored state graph: existing saves keep their revision key.
 export function playerTask(story:Story,p:Progress){
  const task=objective(story,p);
@@ -30,7 +35,7 @@ export function missingHouseEvidence(p:Progress):string[]{
 }
 export function playerDialogue(story:Story,p:Progress):{dialogue:Dialogue;judgment?:PlayerJudgment}|null {
  const original=p.dialogueId?story.dialogues[p.dialogueId]:null;if(!original)return null;
- if(story.id!=='haunted-house')return {dialogue:original};
+ if(story.id!=='haunted-house')return {dialogue:original,judgment:original.judgment?{...original.judgment,label:original.judgment.label??'这一步，怎么判断'}:undefined};
  const d:Dialogue={...original,lines:[...original.lines],choices:original.choices.map(c=>({...c}))};
  const id=p.dialogueId;
  let judgment:PlayerJudgment|undefined;

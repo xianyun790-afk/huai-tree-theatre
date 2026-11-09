@@ -1,0 +1,60 @@
+{
+  "examples": [
+    {
+      "file": "我的第一集-模板.json",
+      "valid": true,
+      "states": 8,
+      "endings": [
+        "delivered"
+      ],
+      "declared": [
+        "delivered"
+      ],
+      "blockedDialogues": 0,
+      "endingSkipsGoals": 0
+    },
+    {
+      "file": "找钥匙-完整示例.json",
+      "valid": true,
+      "states": 73,
+      "endings": [
+        "honest",
+        "cover",
+        "promise"
+      ],
+      "declared": [
+        "honest",
+        "cover",
+        "promise"
+      ],
+      "blockedDialogues": 0,
+      "endingSkipsGoals": 0
+    },
+    {
+      "file": "闹鬼房屋-完整示例.json",
+      "valid": true,
+      "states": 83,
+      "endings": [
+        "sorry",
+        "review"
+      ],
+      "declared": [
+        "sorry",
+        "review"
+      ],
+      "blockedDialogues": 0,
+      "endingSkipsGoals": 0
+    }
+  ],
+  "counterexample": {
+    "scenario": "唯一取得快递的选项，反过来要求已经持有快递",
+    "structurePasses": true,
+    "states": 4,
+    "endings": [],
+    "declared": [
+      "delivered"
+    ],
+    "blockedDialogues": 1,
+    "endingSkipsGoals": 0
+  }
+}
