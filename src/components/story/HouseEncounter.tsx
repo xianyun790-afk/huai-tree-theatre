@@ -4,14 +4,14 @@ import {Modal} from '../ui/Modal';
 import type {Progress,Story} from '@/game/schema';
 import type {SoundCue} from '@/game/audio';
 import {formatText,matches} from '@/game/story';
-import {clearSignal,HOUSE_BEATS,signalQuality,type HouseAction} from '@/game/house/handsOn';
+import {clearSignal,HOUSE_BEATS,signalQuality,type HouseAction,type Tuning} from '@/game/house/handsOn';
 
-interface Props {story:Story;progress:Progress;onChoose:(id:string)=>void;onAct:(action:HouseAction)=>void;onClose:()=>void;play:(cue:SoundCue)=>void}
-export function HouseEncounter({story,progress,onChoose,onAct,onClose,play}:Props){
+interface Props {story:Story;progress:Progress;onChoose:(id:string)=>void;onAct:(action:HouseAction)=>void;onClose:()=>void;play:(cue:SoundCue)=>void;tuning:Tuning;onTune:(tuning:Tuning)=>void}
+export function HouseEncounter({story,progress,onChoose,onAct,onClose,play,tuning,onTune}:Props){
  const id=progress.dialogueId!,d=story.dialogues[id],beat=HOUSE_BEATS[id];
  const title=({tv:'这台电视不太对劲',fridge:'冰箱正在发脾气',bag:'老爸的购物袋',desk:'昨天的施工照片'} as Record<string,string>)[id]??formatText(d.speaker,progress);
  return <Modal title={title} kicker="靠近看看" className={`hands-on-modal encounter-${id}`} onClose={onClose}>
-  {id==='tv'?<Tuner onDone={()=>onAct('hear')} play={play}/>:id==='fridge'?<Soup onDone={()=>onAct('cool')} play={play}/>:id==='desk'?<Photograph onDone={()=>onAct('photo')} play={play}/>:id==='bag'?<Bag onDone={()=>onAct('take')} play={play}/>:<>
+  {id==='tv'?<Tuner onDone={()=>onAct('hear')} play={play} tuning={tuning} onTune={onTune}/>:id==='fridge'?<Soup onDone={()=>onAct('cool')} play={play}/>:id==='desk'?<Photograph onDone={()=>onAct('photo')} play={play}/>:id==='bag'?<Bag onDone={()=>onAct('take')} play={play}/>:<>
    <div className="short-beat"><img alt="" src={`${import.meta.env.BASE_URL}portraits/${d.propPortrait?`house-${d.propPortrait}`:d.portrait}.png`}/><p>{beat?.line??formatText(d.lines[0],progress)}</p></div>
    <div className="beat-actions">{d.choices.map((choice,i)=><button key={choice.id} disabled={!matches(choice.requires,progress)} onClick={()=>onChoose(choice.id)}>{beat?.labels?.[i]??formatText(choice.label,progress)}<ArrowRight size={16}/></button>)}</div>
   </>}
@@ -19,8 +19,8 @@ export function HouseEncounter({story,progress,onChoose,onAct,onClose,play}:Prop
  </Modal>;
 }
 
-function Tuner({onDone,play}:{onDone:()=>void;play:Props['play']}){
- const [frequency,setFrequency]=useState(20),[antenna,setAntenna]=useState(10),[heard,setHeard]=useState(false),[reaction,setReaction]=useState('');
+function Tuner({onDone,play,tuning,onTune}:{onDone:()=>void;play:Props['play'];tuning:Tuning;onTune:Props['onTune']}){
+ const {frequency,antenna}=tuning;const [heard,setHeard]=useState(false),[reaction,setReaction]=useState('');
  const quality=signalQuality(frequency,antenna),clear=clearSignal(frequency,antenna);
  function listen(){play(clear?'talk':'tv');if(clear)setHeard(true);else setReaction(quality>.45?'“放……回……滋——” 人声还断着。':frequency<38?'“限时促销！买拖把送鬼！”':'“今日天气：客厅局部下老爸。”');}
  return <div className="tuning-game">
@@ -32,9 +32,9 @@ function Tuner({onDone,play}:{onDone:()=>void;play:Props['play']}){
    </div><span className="tv-brand" aria-hidden="true">QUAHOG · 1986</span>
   </div>
   {heard?<><p className="encounter-feedback">老爸朝厨房一指：“就一个免费摆件……”</p><button className="encounter-primary" onClick={onDone}>听清了，去找找<ArrowRight size={17}/></button></>:<>
-   <div className="tuner-controls"><label><span>调谐 <output>{frequency}</output></span><input aria-label="电视调谐" type="range" min="0" max="100" value={frequency} onChange={e=>{setFrequency(Number(e.target.value));setReaction('');play('tv');}}/></label><label><span>天线角度 <output>{antenna}°</output></span><input aria-label="天线角度" type="range" min="0" max="90" value={antenna} onChange={e=>{setAntenna(Number(e.target.value));setReaction('');play('tv');}}/></label></div>
+   <div className="tuner-controls"><label><span>调谐 <output>{frequency}</output></span><input aria-label="电视调谐" type="range" min="0" max="100" value={frequency} onChange={e=>{onTune({...tuning,frequency:Number(e.target.value)});setReaction('');play('tv');}}/></label><label><span>天线角度 <output>{antenna}°</output></span><input aria-label="天线角度" type="range" min="0" max="90" value={antenna} onChange={e=>{onTune({...tuning,antenna:Number(e.target.value)});setReaction('');play('tv');}}/></label></div>
    <div className="signal-meter"><span>人声信号</span><meter aria-label="人声信号强度" min="0" max="1" value={quality}/><span>{Math.round(quality*100)}%</span></div>
-   <p className="encounter-feedback" role="status">{reaction||'转动旋钮和天线，试着接住那个声音。'}</p>
+   <p className="encounter-feedback" role="status">{reaction||(clear?'信号清楚了，可以收听。':quality>.65?'人声快清楚了，再微调一点旋钮或天线。':'转动旋钮和天线，试着接住那个声音。')}</p>
    <button className="encounter-primary" onClick={listen}><Volume2 size={17}/>听这个频道</button>
   </>}
  </div>;

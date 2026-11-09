@@ -1,6 +1,9 @@
 import type {Progress, Story} from '../schema.ts';
 import {choose, objective} from '../story.ts';
 
+export interface Tuning {frequency:number;antenna:number}
+export const DEFAULT_TUNING:Tuning={frequency:20,antenna:10};
+
 export type HouseAction = 'hear' | 'cool' | 'take' | 'photo';
 const ACTIONS:Record<HouseAction,{at:string;choices:string[]}>={
  hear:{at:'tv',choices:['static','record']},
@@ -32,15 +35,15 @@ export const HOUSE_BEATS:Record<string,{line:string;labels?:string[]}>={
  father:{line:'“我就捡了个免费摆件。放厨房了……你别告诉你妈。”',labels:['你先躲好']},
  sofa:{line:'沙发又挪了半米。老爸今天的步数，全靠它。',labels:['让它自己锻炼']},
  vacuum:{line:'吸尘器抓到了一只鬼——不，是一片放了三年的薯片。',labels:['倒掉，假装没看见']},
- fridge_early:{line:'“先听听客厅在喊什么。别一进来就盯着我的汤。”',labels:['先回去听听']},
+ fridge_early:{line:'“先听听客厅在喊什么。别一进来就盯着我的汤。”',labels:['回到房间，继续调查']},
  fridge_ok:{line:'冰箱不晃了，购物袋也终于够得到了。',labels:['继续看看']},
  fridge_no:{line:'“拔电源就不用管热汤了？你和你爸真像。”',labels:['接回去，再试试']},
- bag_wait:{line:'冰箱门拍得台面直晃。袋子暂时够不到。',labels:['先看看冰箱']},
+ bag_wait:{line:'冰箱门拍得台面直晃。袋子暂时够不到。',labels:['回到厨房']},
  bag_empty:{line:'袋里只剩薯片。缺牙摆件已经在你身上。',labels:['走了']},
- desk_early:{line:'一整本施工相册。先找到那件旧物，才知道该对照什么。',labels:['先找东西']},
+ desk_early:{line:'一整本施工相册。先找到那件旧物，才知道该对照什么。',labels:['回到书房']},
  desk_ok:{line:'照片里也是这颗缺牙脑袋，就在苹果树旁。',labels:['收好照片']},
  desk_wrong:{line:'阿岚：“你看的是照片，还是家居搭配指南？”',labels:['再看一眼']},
- inventor:{line:'“今天我没开实验台。所以这次，终于不是我的锅。”',labels:['借你桌上的照片看看']},
+ inventor:{line:'“今天我没开实验台。所以这次，终于不是我的锅。”',labels:['回到书房，继续调查']},
  neighbor:{line:'“昨天你爸从坑里拿东西，今天家具追着他跑。很公平。”',labels:['这事你倒记得清楚']},
  pit_wait:{line:'土坑是找到了。先弄清带来的物件和它的来历。',labels:['再查一查']},
  pit:{line:'土坑和照片对上了。放回去之前，要不要让老爸长点记性？',labels:['叫老爸来道歉','留一张“请勿再寄”']},

@@ -2,7 +2,7 @@ import {useEffect,useRef,useState} from 'react';
 import {ArrowRight,BookOpen,Check,Compass,FileText,HelpCircle,LoaderCircle,MapPin,RotateCcw,Volume2,VolumeX,Zap} from 'lucide-react';
 import {HouseEncounter} from '@/components/story/HouseEncounter';
 import {ExploreGoal} from '@/components/story/ExploreGoal';
-import {performHouseAction,type HouseAction} from '@/game/house/handsOn';
+import {DEFAULT_TUNING,performHouseAction,type HouseAction} from '@/game/house/handsOn';
 import {RoomNavigation} from '@/components/story/RoomNavigation';
 import {roomAction} from '@/game/house/layout';
 import {World} from '@/game/World';
@@ -25,11 +25,11 @@ function initialSession(){
 export default function App(){
  const [initial]=useState(initialSession);
  const [custom,setCustom]=useState(initial.custom);const [story,setStory]=useState(initial.story);const [progress,setProgress]=useState(initial.progress);
- const [menu,setMenu]=useState(!initial.progress.started);const [library,setLibrary]=useState(!initial.progress.started);
+ const [menu,setMenu]=useState(!initial.progress.started);const [library,setLibrary]=useState(false);
  const [name,setName]=useState(initial.progress.name);const [load,setLoad]=useState(0);const [error,setError]=useState('');
  const [target,setTarget]=useState<Target|null>(null);const [moving,setMoving]=useState(false);
  const [panel,setPanel]=useState<'journal'|'help'|'restart'|'sound'|null>(null);const [toast,setToast]=useState('');
- const [guided,setGuided]=useState(false);
+ const [guided,setGuided]=useState(false);const [tuning,setTuning]=useState(DEFAULT_TUNING);
  const [saveFailed,setSaveFailed]=useState(false);const [librarySaveFailed,setLibrarySaveFailed]=useState(false);
  const host=useRef<HTMLDivElement>(null);const world=useRef<World|null>(null);const interactRef=useRef<(id:Target)=>void>(()=>{});
  const {settings:audioSettings,update:updateAudio,play}=useGameAudio();const soundRef=useRef<(cue:SoundCue)=>void>(play);soundRef.current=play;const task=playerTask(story,progress);const key=definitionKey(story);
@@ -66,8 +66,9 @@ export default function App(){
   else if(objective(story,next).id!==objective(story,progress).id)setToast(handsOn?'冰箱终于安静了。':'已完成：'+f(task.title));
   const cue=choiceSound(progress,next);if(cue)play(cue);setProgress(next);if(!next.dialogueId)setTarget(null);
  }
- function newGame(){play('start');world.current?.reset();setProgress(handsOn?{...startStory(story,name),room:'living',dialogueId:null}:startStory(story,name));setMenu(false);setLibrary(false);setPanel(null);setTarget(null);setGuided(false);setToast(handsOn?'电视：退——货！退——货！':'');}
+ function newGame(){setTuning(DEFAULT_TUNING);play('start');world.current?.reset();setProgress(handsOn?{...startStory(story,name),room:'living',dialogueId:null}:startStory(story,name));setMenu(false);setLibrary(false);setPanel(null);setTarget(null);setGuided(false);setToast(handsOn?'电视：退——货！退——货！':'');}
  function selectStory(next:Story,keepLibrary=false){
+  setTuning(DEFAULT_TUNING);
   play('page');
   if(progress.started)saveProgress(story,progress);
   const saved=loadProgress(next);if(!saved.started)saved.name=progress.name;
@@ -91,7 +92,7 @@ export default function App(){
   </>}
   {(saveFailed||librarySaveFailed)&&<p className="save-warning" role="status">{librarySaveFailed?'此浏览器无法保存剧本，关闭页面后需重新导入。':'此浏览器无法保存进度，请保持页面打开。'}</p>}
   {toast&&!dialogue&&!panel&&!library&&<div className="toast" role="status"><Check size={17}/>{toast}</div>}
-  {dialogue&&ready&&!menu&&!library&&(handsOn?<HouseEncounter key={progress.dialogueId} story={story} progress={progress} onChoose={onChoose} onAct={onAct} onClose={closeDialogue} play={play}/>:<Conversation story={story} progress={progress} onChoose={onChoose} onClose={closeDialogue}/>)}
+  {dialogue&&ready&&!menu&&!library&&(handsOn?<HouseEncounter key={progress.dialogueId} story={story} progress={progress} onChoose={onChoose} onAct={onAct} onClose={closeDialogue} play={play} tuning={tuning} onTune={setTuning}/>:<Conversation story={story} progress={progress} onChoose={onChoose} onClose={closeDialogue}/>)}
   {panel==='journal'&&<CaseBook story={story} progress={progress} onClose={()=>setPanel(null)}/>}
   {panel==='sound'&&<Modal title="让房子热闹一点。" onClose={()=>setPanel(null)} kicker="游戏音效"><div className="audio-settings"><label className="audio-toggle"><span><strong>开启游戏音效</strong><small>脚步、开门、线索和卡通道具</small></span><input type="checkbox" checked={audioSettings.enabled} onChange={e=>updateAudio({...audioSettings,enabled:e.target.checked})}/></label><label className="audio-volume"><span>音效音量 <output>{Math.round(audioSettings.volume*100)}%</output></span><input aria-label="音效音量" type="range" min="0" max="100" value={Math.round(audioSettings.volume*100)} onChange={e=>updateAudio({...audioSettings,volume:Number(e.target.value)/100})}/></label><p>在屋里踩木地板，走到后院踩草地；发现线索会有一小段提示旋律。设置会保存在这台浏览器。</p><div className="modal-actions"><Button disabled={!audioSettings.enabled||audioSettings.volume===0} onClick={()=>play('clue')}>试听线索音效<Volume2 size={16}/></Button><Button className="primary" onClick={()=>setPanel(null)}>继续游戏</Button></div></div></Modal>}
   {panel==='help'&&<Modal title={handsOn?"进屋，动手试试。":"看黄色按钮，一步一步玩。"} onClose={()=>setPanel(null)} kicker={story.title}><div className="help-list"><p><b>你控制谁</b>{f(story.world.controlHint)}。黄圈始终跟着你。</p><p><b>这一集要做什么</b>{handsOn?"查出谁把什么东西带回了家。":f(story.motivation)}</p><p><b>怎么操作</b>{handsOn?"点物件靠近互动。电视可以调谐，汤锅可以拖动，也能点选拿起再放下。点地面、方向键或 WASD 移动。需要指路时展开左上角提示。":"点左上角黄色按钮，人物自动走近并互动。点地面可自由移动，方向键或 WASD 也能走。E 键走向当前目标。"}</p><p><b>怎么换故事</b>右上角「换剧本」可切换内置故事，或导入自己的 JSON 剧本。各集独立存档，换回来还能接着玩。</p></div><p className="help-foot">试玩包含室外街区、客厅、厨房、书房和后院，复用四个身体模型，使用固定编写的对白。自定义模型和配音尚未接入。</p><Button className="primary full-width" onClick={()=>setPanel(null)}>继续这一集</Button></Modal>}
