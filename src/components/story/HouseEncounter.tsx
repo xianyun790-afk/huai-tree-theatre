@@ -1,25 +1,29 @@
-import {useRef,useState,type PointerEvent} from 'react';
-import {ArrowRight,Hand,RotateCcw,Volume2} from 'lucide-react';
+import {useState} from 'react';
+import {ArrowRight,RotateCcw,Volume2} from 'lucide-react';
+import {KitchenEncounter} from './KitchenEncounter';
+import {KITCHEN_DIALOGUES,type KitchenAction} from '@/game/house/kitchen';
 import {Modal} from '../ui/Modal';
 import type {Progress,Story} from '@/game/schema';
 import type {SoundCue} from '@/game/audio';
 import {formatText,matches} from '@/game/story';
 import {clearSignal,HOUSE_BEATS,signalQuality,type HouseAction,type Tuning} from '@/game/house/handsOn';
 
-interface Props {story:Story;progress:Progress;onChoose:(id:string)=>void;onAct:(action:HouseAction)=>void;onClose:()=>void;play:(cue:SoundCue)=>void;tuning:Tuning;onTune:(tuning:Tuning)=>void}
-export function HouseEncounter({story,progress,onChoose,onAct,onClose,play,tuning,onTune}:Props){
+interface Props {story:Story;progress:Progress;onChoose:(id:string)=>void;onAct:(action:HouseAction)=>void;onClose:()=>void;play:(cue:SoundCue)=>void;tuning:Tuning;onTune:(tuning:Tuning)=>void;onKitchen:(action:KitchenAction)=>void;kitchenFeedback:string}
+export function HouseEncounter({story,progress,onChoose,onAct,onClose,play,tuning,onTune,onKitchen,kitchenFeedback}:Props){
  const id=progress.dialogueId!,d=story.dialogues[id],beat=HOUSE_BEATS[id];
- const title=({tv:'这台电视不太对劲',fridge:'冰箱正在发脾气',bag:'老爸的购物袋',desk:'昨天的施工照片'} as Record<string,string>)[id]??formatText(d.speaker,progress);
- return <Modal title={title} kicker="靠近看看" className={`hands-on-modal encounter-${id}`} onClose={onClose}>
-  {id==='tv'?<Tuner onDone={()=>onAct('hear')} play={play} tuning={tuning} onTune={onTune}/>:id==='fridge'?<Soup onDone={()=>onAct('cool')} play={play}/>:id==='desk'?<Photograph onDone={()=>onAct('photo')} play={play}/>:id==='bag'?<Bag onDone={()=>onAct('take')} play={play}/>:<>
-   <div className="short-beat"><img alt="" src={`${import.meta.env.BASE_URL}portraits/${d.propPortrait?`house-${d.propPortrait}`:d.portrait}.png`}/><p>{beat?.line??formatText(d.lines[0],progress)}</p></div>
+ const kitchen=KITCHEN_DIALOGUES.includes(id);
+ const title=kitchen?'厨房里，自己试试':({tv:'这台电视不太对劲',desk:'昨天的施工照片'} as Record<string,string>)[id]??formatText(d.speaker,progress);
+ const line=id==='father'&&progress.kitchen?(progress.kitchen.ticket==='returned'?'“彩票捡回来了？我宣布，你是这个家最有投资眼光的人。”':progress.kitchen.ticket==='floor'?'“刚才厨房飞过去的是我的彩票？那可是我的退休计划！”':progress.kitchen.method==='mitt'?'“你还会戴手套搬锅？你妈一定教了你很多我不知道的东西。”':null):null;
+ return <Modal title={title} kicker={kitchen?'厨房 / 物件都可以点':'靠近看看'} className={`hands-on-modal encounter-${id} ${kitchen?'kitchen-modal':''}`} onClose={onClose}>
+  {kitchen?<KitchenEncounter progress={progress} feedback={kitchenFeedback} onAct={onKitchen} onClose={onClose}/>:id==='tv'?<Tuner hasSkull={progress.clues.includes('skull')} onDone={()=>onAct('hear')} play={play} tuning={tuning} onTune={onTune}/>:id==='desk'?<Photograph onDone={()=>onAct('photo')} play={play}/>:<>
+   <div className="short-beat"><img alt="" src={`${import.meta.env.BASE_URL}portraits/${d.propPortrait?`house-${d.propPortrait}`:d.portrait}.png`}/><p>{line??beat?.line??formatText(d.lines[0],progress)}</p></div>
    <div className="beat-actions">{d.choices.map((choice,i)=><button key={choice.id} disabled={!matches(choice.requires,progress)} onClick={()=>onChoose(choice.id)}>{beat?.labels?.[i]??formatText(choice.label,progress)}<ArrowRight size={16}/></button>)}</div>
   </>}
-  <details className="original-dialogue"><summary>展开原对白</summary>{d.lines.map((line,i)=><p key={i}>{formatText(line,progress)}</p>)}</details>
+  {!kitchen&&<details className="original-dialogue"><summary>展开原对白</summary>{d.lines.map((line,i)=><p key={i}>{formatText(line,progress)}</p>)}</details>}
  </Modal>;
 }
 
-function Tuner({onDone,play,tuning,onTune}:{onDone:()=>void;play:Props['play'];tuning:Tuning;onTune:Props['onTune']}){
+function Tuner({onDone,play,tuning,onTune,hasSkull}:{hasSkull:boolean;onDone:()=>void;play:Props['play'];tuning:Tuning;onTune:Props['onTune']}){
  const {frequency,antenna}=tuning;const [heard,setHeard]=useState(false),[reaction,setReaction]=useState('');
  const quality=signalQuality(frequency,antenna),clear=clearSignal(frequency,antenna);
  function listen(){play(clear?'talk':'tv');if(clear)setHeard(true);else setReaction(quality>.45?'“放……回……滋——” 人声还断着。':frequency<38?'“限时促销！买拖把送鬼！”':'“今日天气：客厅局部下老爸。”');}
@@ -31,7 +35,7 @@ function Tuner({onDone,play,tuning,onTune}:{onDone:()=>void;play:Props['play'];t
     {heard?<p>“把昨天从后院拿走的东西<br/><strong>放 · 回 · 去！”</strong></p>:<><span className="screen-ghost" style={{opacity:quality}} aria-hidden="true">◉_◉</span><span className="screen-caption">{quality>.65?'放……回……去……':quality>.3?'……回……滋……':'沙沙沙——'}</span></>}
    </div><span className="tv-brand" aria-hidden="true">QUAHOG · 1986</span>
   </div>
-  {heard?<><p className="encounter-feedback">老爸朝厨房一指：“就一个免费摆件……”</p><button className="encounter-primary" onClick={onDone}>听清了，去找找<ArrowRight size={17}/></button></>:<>
+  {heard?<><p className="encounter-feedback">{hasSkull?'手里的摆件抖了一下。电视催的，果然是它。':'老爸朝厨房一指：“就一个免费摆件……”'}</p><button className="encounter-primary" onClick={onDone}>{hasSkull?'记下留言':'听清了，去找找'}<ArrowRight size={17}/></button></>:<>
    <div className="tuner-controls"><label><span>调谐 <output>{frequency}</output></span><input aria-label="电视调谐" type="range" min="0" max="100" value={frequency} onChange={e=>{onTune({...tuning,frequency:Number(e.target.value)});setReaction('');play('tv');}}/></label><label><span>天线角度 <output>{antenna}°</output></span><input aria-label="天线角度" type="range" min="0" max="90" value={antenna} onChange={e=>{onTune({...tuning,antenna:Number(e.target.value)});setReaction('');play('tv');}}/></label></div>
    <div className="signal-meter"><span>人声信号</span><meter aria-label="人声信号强度" min="0" max="1" value={quality}/><span>{Math.round(quality*100)}%</span></div>
    <p className="encounter-feedback" role="status">{reaction||(clear?'信号清楚了，可以收听。':quality>.65?'人声快清楚了，再微调一点旋钮或天线。':'转动旋钮和天线，试着接住那个声音。')}</p>
@@ -39,38 +43,6 @@ function Tuner({onDone,play,tuning,onTune}:{onDone:()=>void;play:Props['play'];t
   </>}
  </div>;
 }
-
-function Soup({onDone,play}:{onDone:()=>void;play:Props['play']}){
- const [selected,setSelected]=useState(false),[unplugged,setUnplugged]=useState(false),[moved,setMoved]=useState(false),[offset,setOffset]=useState({x:0,y:0});
- const drag=useRef<{x:number;y:number}|null>(null),mat=useRef<HTMLButtonElement>(null);
- function placeSoup(){play('pickup');if(unplugged){setMoved(true);setSelected(false);}else onDone();}
- function release(e:PointerEvent<HTMLButtonElement>){
-  const rect=mat.current?.getBoundingClientRect(),wasDrag=drag.current;
-  drag.current=null;setOffset({x:0,y:0});
-  if(wasDrag&&rect&&e.clientX>=rect.left&&e.clientX<=rect.right&&e.clientY>=rect.top&&e.clientY<=rect.bottom)placeSoup();
- }
- return <>
-  <p className="encounter-quote" role="status">{moved?'热汤移开了。冰箱：“我的插头呢？”':unplugged?'电视：“你把晚饭也一起关机了？！”':'冰箱：“烫烫烫！谁把开水汤塞进来了！”'}</p>
-  <div className={`soup-station ${unplugged?'is-unplugged':''}`}>
-   <div className="mini-fridge" aria-hidden="true"><span className="fridge-eyes">{unplugged?'− −':'› ‹'}</span><span className="fridge-shelf"/></div>
-   <button disabled={moved} className={`soup-pot ${selected?'is-selected':''} ${moved?'on-mat':''}`} aria-label="拿起热汤" aria-pressed={selected} style={{transform:`translate(${offset.x}px,${offset.y}px)`}} onClick={()=>setSelected(true)}
-    onPointerDown={e=>{if(e.button!==0)return;setSelected(true);drag.current={x:e.clientX,y:e.clientY};e.currentTarget.setPointerCapture(e.pointerId);play('pickup');}}
-    onPointerMove={e=>{if(drag.current)setOffset({x:e.clientX-drag.current.x,y:e.clientY-drag.current.y});}}
-    onPointerUp={release} onPointerCancel={()=>{drag.current=null;setOffset({x:0,y:0});}}>
-    <span className="soup-steam" aria-hidden="true">♨</span><span className="pot-lid"/><span className="pot-body"/><span className="sr-only">热汤锅</span>
-   </button>
-   <button ref={mat} className={`cooling-mat ${selected?'can-drop':''}`} aria-label="把热汤放到隔热垫" disabled={!selected} onClick={()=>{if(selected)placeSoup();}}><span aria-hidden="true">▧</span><strong>隔热垫</strong></button>
-  </div>
-  <div className="soup-tools"><span><Hand size={14}/>拖动汤锅；也可先点锅，再点位置</span><button onClick={()=>{if(unplugged&&moved)onDone();else{setUnplugged(v=>!v);play('fridge');}}}>{unplugged?'接回插头':'拔掉插头'}</button></div>
- </>;
-}
-
-function Bag({onDone,play}:{onDone:()=>void;play:Props['play']}){
- const [remark,setRemark]=useState('湿泥的气味，从袋底冒了出来。');
- return <><div className="bag-contents"><button aria-label="查看薯片" onClick={()=>{play('pickup');setRemark('老爸的薯片。它的保质期比这房子还神秘。');}}><span className="chips-pack">CHIPS<br/>▱</span></button><button aria-label="取出缺牙摆件" className="bag-skull" onClick={onDone}><Skull/><span>拿起来</span></button><button aria-label="查看手套" onClick={()=>{play('pickup');setRemark('一只沾泥手套。老爸确实去后院翻过东西。');}}><Hand size={65}/></button></div><p className="encounter-feedback" role="status">{remark}</p></>;
-}
-
-function Skull(){return <svg viewBox="0 0 100 100" role="img" aria-label="底座沾泥的缺牙摆件"><g stroke="#273038" strokeWidth="3" strokeLinejoin="round"><path fill="#ded4b1" d="M22 76L16 90H85L79 76Z"/><path fill="#f5ebcf" d="M28 66C7 55 13 18 40 15C75 6 94 36 78 61L73 70V81H31V71Z"/><path fill="#314744" d="M30 41L45 38L41 53L28 52ZM58 38L73 41L75 53L62 51ZM48 57L43 66H56Z"/><path d="M39 69V80M50 69V76M62 69V81"/><path fill="#896d4e" d="M18 89L28 85L39 90L60 85L79 90"/></g></svg>;}
 
 function Photograph({onDone,play}:{onDone:()=>void;play:Props['play']}){
  const [back,setBack]=useState(false);

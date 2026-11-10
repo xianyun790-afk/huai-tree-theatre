@@ -1,6 +1,6 @@
 import type {Progress, Room, Target} from './schema.ts';
 
-export type SoundCue = 'click'|'talk'|'page'|'start'|'door'|'step-wood'|'step-street'|'step-grass'|'clue'|'ending'|'tv'|'fridge'|'spring'|'vacuum'|'pickup';
+export type SoundCue = 'click'|'talk'|'page'|'start'|'door'|'step-wood'|'step-street'|'step-grass'|'clue'|'ending'|'tv'|'fridge'|'spring'|'vacuum'|'pickup'|'fan';
 export interface AudioSettings {enabled:boolean;volume:number}
 export const AUDIO_KEY='town-theatre-audio-v1';
 export const DEFAULT_AUDIO:AudioSettings={enabled:true,volume:.55};
@@ -41,6 +41,7 @@ export const SOUNDS:Record<SoundCue,Sound>={
  fridge:{notes:[note(130,0,.2,.11,90,'triangle'),note(110,.19,.24,.075,145,'triangle')]},
  spring:{notes:[note(260,0,.16,.14,115,'triangle'),note(180,.13,.28,.1,480,'triangle')]},
  vacuum:{notes:[note(95,0,.35,.05,170,'triangle')],noise:[{at:0,duration:.42,frequency:550,gain:.09}]},
+ fan:{notes:[note(90,0,.38,.04,145,'triangle')],noise:[{at:0,duration:.45,frequency:950,gain:.055}]},
  pickup:{notes:[note(420,.08,.08,.09,600)],noise:[{at:0,duration:.17,frequency:2100,gain:.075}]},
 };
 

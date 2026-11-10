@@ -5,6 +5,7 @@ import {route,type Point} from './navigation';
 import {BODIES,TARGETS as TARGET_IDS,type Body,type Room,type Target,type WorldSetup} from './schema';
 import {HOUSE_ROOMS,roomRoute,type Hotspot} from './house/layout';
 import {footstepFor,type SoundCue} from './audio';
+import type {KitchenState} from './house/kitchen';
 interface Actor {group:THREE.Group;mixer:THREE.AnimationMixer;actions:Record<string,THREE.AnimationAction>;current:string;heading:number}
 export const TARGETS:Partial<Record<Target,Hotspot>>={
  inventor:{label:'阿岚 · 修机器',kind:'对话',point:{x:2.65,z:.9},anchor:[2.85,2.85,.75],body:'inventor'},
@@ -23,6 +24,8 @@ export class World {
  private labels=new Map<Target,HTMLButtonElement>();private playerLabel:HTMLDivElement;private paused=true;private active=false;
  private cameraFocus=0;private currentTarget:Target='inventor';private ring:THREE.Mesh;private dest:THREE.Mesh;
  private exploration=false;private guided=true;
+ private kitchenState:KitchenState|null=null;
+ private kitchenProps:{rotor:THREE.Group;ticket:THREE.Mesh;steam:THREE.Group;mitt:THREE.Group}|null=null;
  private targets:Partial<Record<Target,Hotspot>>=structuredClone(TARGETS);private enabledTargets=new Set<Target>();
  private setup:WorldSetup|null=null;private wasEnded=false;private playerBody:Body='neighbor';
  private keyHandler:(e:KeyboardEvent)=>void;private pointerHandler:(e:PointerEvent)=>void;
@@ -79,8 +82,28 @@ export class World {
    const body=name as Body;const group=new THREE.Group();group.name=body;group.add(asset.scene);group.rotation.y=.55;this.scene.add(group);
    const mixer=new THREE.AnimationMixer(asset.scene);const actions:Record<string,THREE.AnimationAction>={};for(const clip of asset.animations){const key=['Idle','Walk','Talk','Point'].find(k=>clip.name.includes(k))??clip.name;actions[key]=mixer.clipAction(clip);}this.actors[body]={group,mixer,actions,current:'',heading:.55};this.animate(body,'Idle');
   }
-  this.showRoom();this.placeActors();this.updateProps();this.refreshLabels();
+  this.addKitchenProps();this.showRoom();this.placeActors();this.updateProps();this.refreshLabels();
  }
+ private addKitchenProps(){
+  const room=this.rooms.kitchen;if(!room)return;
+  const material=(color:string)=>new THREE.MeshToonMaterial({color,gradientMap:this.toonRamp});
+  const green=material('#85a897'),cream=material('#e1d4aa'),ink=material('#354c43');
+  const fan=new THREE.Group();fan.name='Kitchen_Fan';fan.position.set(.1,1.66,-2.4);room.add(fan);
+  const base=new THREE.Mesh(new THREE.CylinderGeometry(.3,.36,.09,20),cream);base.position.y=.05;fan.add(base);
+  const stem=new THREE.Mesh(new THREE.CylinderGeometry(.05,.05,.6,10),green);stem.position.y=.35;fan.add(stem);
+  const cage=new THREE.Mesh(new THREE.TorusGeometry(.35,.028,6,24),ink);cage.rotation.y=Math.PI/2;cage.position.y=.86;fan.add(cage);
+  const rotor=new THREE.Group();rotor.position.y=.86;fan.add(rotor);
+  for(let i=0;i<3;i++){const blade=new THREE.Mesh(new THREE.SphereGeometry(.18,10,6),green);const angle=i*Math.PI*2/3;blade.scale.set(.16,1,.5);blade.position.set(0,Math.cos(angle)*.17,Math.sin(angle)*.17);blade.rotation.x=-angle;rotor.add(blade);}
+  const mat=new THREE.Mesh(new THREE.CylinderGeometry(.43,.43,.025,24),material('#cfac62'));mat.position.set(4.05,1.66,-2.4);room.add(mat);
+  const ticket=new THREE.Mesh(new THREE.BoxGeometry(.52,.012,.25),material('#f0d78b'));ticket.name='Kitchen_Lottery';room.add(ticket);
+  const mitt=new THREE.Group();mitt.position.set(4.6,2.8,-4.25);mitt.rotation.z=-.2;room.add(mitt);
+  const glove=new THREE.Mesh(new THREE.SphereGeometry(.18,10,8),material('#cb955b'));glove.scale.set(.8,1.4,.35);mitt.add(glove);
+  const thumb=glove.clone();thumb.scale.set(.38,.65,.35);thumb.position.set(-.14,-.02,0);thumb.rotation.z=.6;mitt.add(thumb);
+  const steam=new THREE.Group();room.add(steam);
+  for(let i=0;i<3;i++){const puff=new THREE.Mesh(new THREE.SphereGeometry(.10+i*.025,8,6),new THREE.MeshBasicMaterial({color:'#fff9e5',transparent:true,opacity:.55,depthWrite:false}));puff.position.set((i%2)*.08,i*.19,0);steam.add(puff);}
+  this.kitchenProps={rotor,ticket,steam,mitt};
+ }
+ setKitchenState(state:KitchenState|null){this.kitchenState=state;this.updateProps();}
  private animate(body:Body,clip:string){const a=this.actors[body];if(!a||a.current===clip||!a.actions[clip])return;const prev=a.actions[a.current],next=a.actions[clip];next.reset().play();if(prev)next.crossFadeFrom(prev,.18,true);a.current=clip;}
  configure(setup:WorldSetup,enabled:Target[]){this.setup=setup;this.enabledTargets=new Set(enabled);this.playerLabel.textContent=setup.playerLabel;this.room='street';this.rebuildTargets();this.reset();}
  private rebuildTargets(){
@@ -97,6 +120,16 @@ export class World {
   if(this.targets.fridge)this.targets.fridge.label=this.fridgeCooled?'恢复制冷的冰箱':'拒绝营业的冰箱';
   if(this.targets['shopping-bag'])this.targets['shopping-bag'].label=this.skullTaken?'空购物袋 · 摆件已带走':'老爸的购物袋';
   const kitchen=this.rooms.kitchen;const skull=kitchen?.getObjectByName('Skull_Collectible');if(skull)skull.visible=!this.skullTaken;
+  if(this.kitchenProps&&kitchen){
+   const k=this.kitchenState,moved=k?.potMoved??this.fridgeCooled,held=k?.holdingPot??false;
+   for(const name of ['Soup_pot','Soup_lid','Soup_knob']){const pot=kitchen.getObjectByName(name);if(!pot)continue;pot.userData.originalPosition??=pot.position.clone();pot.position.copy(pot.userData.originalPosition);if(moved)pot.position.x+=.85;else if(held){pot.position.x-=1.1;pot.position.y+=.5;}}
+   const {ticket,steam,mitt}=this.kitchenProps;
+   ticket.position.set(k?.ticket==='floor'?2.1:k?.ticket==='returned'?-3.8:.9,k?.ticket==='floor'?.07:k?.ticket==='returned'?1.9:1.69,k?.ticket==='floor'?1.8:k?.ticket==='returned'?-1.76:-2.25);
+   ticket.rotation.set(k?.ticket==='returned'?Math.PI/2:0,0,k?.ticket==='floor'?.2:0);
+   mitt.visible=!k?.mitt;
+   steam.visible=!!k&&k.heat>0&&!moved;steam.position.set(held?2.1:3.2,held?2.9:2.45,-2.4);
+   steam.scale.setScalar((k?.heat??100)/100);
+  }
   const returned=this.rooms.yard?.getObjectByName('Returned_Skull');if(returned)returned.visible=this.resolved;
   for(const room of Object.values(this.rooms))room.traverse(o=>{if(/Haunt_Ghost|Haunt_FridgeEye|Haunt_Static/.test(o.name))o.visible=!this.resolved;});
  }
@@ -139,6 +172,7 @@ export class World {
   else if(aspect<1.15){const focus=player&&this.active?player.group.position.x:0;this.cameraFocus+=(focus-this.cameraFocus)*Math.min(1,dt*4);this.camera.position.set(18+this.cameraFocus,22,28);this.camera.lookAt(this.cameraFocus,this.active?1.3:0,0);}else{this.camera.position.set(18,22,28);this.camera.lookAt(-.5,0,0);}
   this.camera.updateMatrixWorld();
   for(const a of Object.values(this.actors)){a.mixer.update(dt);let diff=a.heading-a.group.rotation.y;diff=Math.atan2(Math.sin(diff),Math.cos(diff));a.group.rotation.y+=diff*Math.min(1,dt*9);}
+  if(this.kitchenProps&&this.kitchenState?.fanOn&&!this.reduceMotion)this.kitchenProps.rotor.rotation.x+=dt*18;
   if(!this.reduceMotion){for(const room of Object.values(this.rooms)){const ghost=room.children.find(o=>o.name.startsWith('Haunt_Ghost'));if(ghost)ghost.position.y=this.resolved?0:Math.sin(this.elapsed*1.7)*.16;const sofa=room.getObjectByName('Haunt_Sofa');if(sofa)sofa.position.y=this.resolved?0:.12+Math.sin(this.elapsed*3)*.08;const fridge=room.getObjectByName('Haunt_Fridge');if(fridge)fridge.rotation.y=this.resolved||this.fridgeCooled?0:Math.sin(this.elapsed*3)*.025;}}
   if(player){this.ring.position.copy(player.group.position);this.ring.position.y=.15;this.project(this.playerLabel,player.group.position.clone().add(new THREE.Vector3(0,2.7,0)));}
   for(const [id,b] of this.labels){const t=this.targets[id];if(t&&!b.hidden)this.project(b,new THREE.Vector3(...t.anchor));}

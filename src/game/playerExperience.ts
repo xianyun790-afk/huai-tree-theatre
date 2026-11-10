@@ -12,6 +12,7 @@ export function carriedItems(story:Story,p:Progress):string[]{
 export function playerTask(story:Story,p:Progress){
  const task=objective(story,p);
  if(story.id!=='haunted-house')return task;
+ if(p.room==='kitchen'&&!p.clues.includes('skull'))return {...task,id:'kitchen-play',title:'拿到购物袋里的摆件',target:p.flags.fridge_cooled?'shopping-bag' as const:'fridge' as const,action:'靠近厨房台面',detail:'冰箱门不停拍打，热汤还在冒蒸汽。观察台面和挂着的物件，试试它们有什么作用。'};
  if(task.id==='listen')return {...task,detail:'客厅传来断断续续的说话声。先靠近电视观察，再决定怎样听清。'};
  if(task.id==='photos')return {...task,detail:'摆件已带在身上。去书房核对旧照片，确认它以前放在哪里。'};
  return task;

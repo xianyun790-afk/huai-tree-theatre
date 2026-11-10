@@ -25,6 +25,7 @@ export function signalQuality(frequency:number,antenna:number):number {
 }
 export const clearSignal=(frequency:number,antenna:number)=>signalQuality(frequency,antenna)>=.84;
 export function houseIntent(story:Story,p:Progress):string {
+ if(p.room==='kitchen'&&!p.clues.includes('skull'))return '拿到购物袋里的摆件';
  return ({listen:'弄清家里为什么闹鬼',fridge:'找出老爸带回来的东西',bag:'找出老爸带回来的东西',photos:'查清摆件的来历',return:'把摆件送回原处'} as Record<string,string>)[objective(story,p).id]??'在屋里找找线索';
 }
 

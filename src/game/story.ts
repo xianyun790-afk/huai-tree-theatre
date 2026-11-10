@@ -1,5 +1,6 @@
 import {ROOMS} from './schema.ts';
 import {HOUSE_ROOMS} from './house/layout.ts';
+import {validKitchen} from './house/kitchen.ts';
 import type { Condition, Progress, Story } from './schema.ts';
 export type { Body, Target, Progress, Story } from './schema.ts';
 function canonical(value: unknown): string {
@@ -41,6 +42,11 @@ export function interact(story: Story, p: Progress, target: import('./schema.ts'
     if(!HOUSE_ROOMS[room].targets[target])return p;
   }
   const route = story.interactions[target]?.find(r => matches(r.when, p));
+  // The kitchen can be investigated before the television. Story evidence remains independent.
+  if(story.id==='haunted-house'&&p.room==='kitchen'){
+    if(target==='fridge')return {...p,dialogueId:p.flags.fridge_cooled?'fridge_ok':'fridge'};
+    if(target==='shopping-bag')return {...p,dialogueId:p.clues.includes('skull')?'bag_empty':p.flags.fridge_cooled?'bag':'bag_wait'};
+  }
   return route ? { ...p, dialogueId: route.dialogue } : p;
 }
 export function choose(story: Story, p: Progress, id: string): Progress {
@@ -64,6 +70,10 @@ export function parseProgress(raw: string | null, story: Story): Progress | null
     const p = JSON.parse(raw); const plain = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
     if (!plain(p) || p.version !== 3 || p.storyId !== story.id || p.definitionKey !== definitionKey(story) || typeof p.started !== 'boolean' || typeof p.name !== 'string' || p.name.length > 16 || !Array.isArray(p.clues) || new Set(p.clues).size !== p.clues.length || !plain(p.flags) || !plain(p.choices)) return null;
     if (story.world.stage==='house' ? !ROOMS.includes(p.room as never) : p.room !== undefined) return null;
+    if(p.kitchen!==undefined){
+      if(story.id!=='haunted-house'||!validKitchen(p.kitchen)||!p.started)return null;
+      if((p.kitchen.potMoved||p.kitchen.heat===0)!==(p.flags.fridge_cooled===true))return null;
+    }
     if (!p.started && p.room !== undefined && p.room !== 'street') return null;
     if (p.clues.some(id => typeof id !== 'string' || !story.clues.some(c => c.id === id))) return null;
     if (Object.entries(p.flags).some(([key, v]) => !story.state.flags.includes(key) || typeof v !== 'boolean')) return null;

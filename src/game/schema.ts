@@ -65,6 +65,7 @@ export interface Story {
   endings: Record<string, { title: string; text: string; tag: string }>;
 }
 export interface Progress {
+  kitchen?: import('./house/kitchen.ts').KitchenState;
   version: 3;
   storyId: string;
   definitionKey: string;
